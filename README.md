@@ -23,6 +23,11 @@ A macOS desktop app for managing multiple tmux-based AI coding agent sessions in
 - **Cost tracking** — Per-session and total USD cost detection from agent output
 - **Session export** — Export session output to ~/Downloads as a log file
 - **Git context** — Auto-detect branch and worktree path from working directory
+- **Git worktree auto-creation** — Optionally create a dedicated git worktree + branch per session so agents don't conflict
+- **Startup command** — Auto-launch `claude`, `aider`, or custom command when a session starts
+- **Live output preview** — See the last meaningful line of each session's terminal output in the sidebar at a glance
+- **Session notes** — Attach a freeform note to any session (double-click to edit, persisted across restarts)
+- **Auto-respond patterns** — Configure patterns (e.g., `[y/n]` → `y`) that auto-reply when agents are WAITING — perfect for overnight runs
 - **Desktop notifications** — macOS notification when any agent needs your input
 - **Session persistence** — Restores existing `luffy-*` tmux sessions on app restart
 
@@ -30,7 +35,7 @@ A macOS desktop app for managing multiple tmux-based AI coding agent sessions in
 
 - **Frontend**: React 19 + TypeScript + Zustand + xterm.js v5
 - **Backend**: Tauri 2 + Rust + portable-pty
-- **Testing**: Vitest + @testing-library/react + cargo test (87 frontend + 57 Rust = 144 tests)
+- **Testing**: Vitest + @testing-library/react + cargo test (109 frontend + 80 Rust = 189 tests)
 - **Package manager**: bun
 
 ## Development
@@ -63,6 +68,8 @@ bun run tauri build
 | Cmd+Shift+A | Jump to next WAITING session |
 | Cmd+1–9 | Switch to session by index |
 | Cmd+[ / ] | Cycle sessions |
+| Cmd+T | Session templates |
+| Cmd+Shift+R | Auto-respond patterns |
 | Cmd+L | Toggle event log panel |
 | Cmd+/ | Keyboard shortcuts help |
 | Cmd+Shift+1 | 1-pane layout |
@@ -82,8 +89,9 @@ src-tauri/src/          # Rust backend
   session/              # Session lifecycle, health checks, events
   status/               # Agent status detection from PTY output
   pty_stream.rs         # PTY attach/stream via portable-pty
-  git.rs                # Git branch/worktree detection
+  git.rs                # Git branch/worktree detection and creation
   cost.rs               # USD cost detection from agent output
   templates.rs          # Session template persistence
+  auto_respond.rs       # Auto-response pattern matching and persistence
   commands/             # Tauri IPC command handlers
 ```
