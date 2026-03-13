@@ -34,7 +34,7 @@
 ```
 
 `status` values: `"IDLE" | "THINKING" | "WAITING" | "ERROR" | "DONE"`
-`agent_type` values: `"claude-code" | "aider" | "generic"`
+`agent_type` values: `"claude-code" | "codex" | "aider" | "generic"`
 
 ## Hooks
 

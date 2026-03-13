@@ -15,7 +15,7 @@ pub struct AppState {
 
 ### `session/`
 
-- `model.rs` — `Session`, `AgentStatus` (Idle/Thinking/WaitingForInput/Error/Done), `AgentType` (ClaudeCode/Aider/Generic)
+- `model.rs` — `Session`, `AgentStatus` (Idle/Thinking/WaitingForInput/Error/Done), `AgentType` (ClaudeCode/Codex/Aider/Generic)
   - `tmux_session` format: `luffy-{first-8-chars-of-uuid}`
   - `created_at` persisted to `session_meta.rs` so it survives restarts
 - `manager.rs` — `SessionManager` (Arc<Mutex<HashMap<id, Session>>>)
@@ -102,6 +102,6 @@ All Tauri commands. Key patterns:
 
 ## Test Patterns
 
-- Rust: `cd src-tauri && cargo test` — 121 tests
+- Rust: `cd src-tauri && cargo test` — 122 tests
 - Tests that mutate `HOME`: use `with_temp_home(|| { ... })` via `crate::TEST_HOME_LOCK`
 - Frontend: `bun run test --run` — 180 tests
