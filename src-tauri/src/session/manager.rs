@@ -18,7 +18,14 @@ impl SessionManager {
 
     /// Create a new tmux session and register it.
     pub fn create_session(&self, name: &str, agent_type: AgentType, working_dir: Option<&str>) -> Result<Session> {
-        let session = Session::new(name, agent_type);
+        let mut session = Session::new(name, agent_type);
+
+        if let Some(dir) = working_dir {
+            let (branch, worktree) = crate::git::detect_git_info(dir);
+            session.branch = branch;
+            session.worktree_path = worktree;
+        }
+
         let tmux_name = &session.tmux_session;
 
         let mut cmd = Command::new("tmux");

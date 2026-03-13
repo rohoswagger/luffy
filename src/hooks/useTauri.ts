@@ -7,6 +7,11 @@ export function useTauriEvents() {
   const { setSessions } = useSessionStore();
 
   useEffect(() => {
+    // Request desktop notification permission on app start
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     invoke<SessionData[]>("restore_sessions")
       .then(setSessions)
       .catch(() => {
@@ -17,8 +22,18 @@ export function useTauriEvents() {
       setSessions(event.payload);
     });
 
+    const unlistenNeeds = listen<string>("agent-needs-input", (event) => {
+      if (Notification.permission === "granted") {
+        new Notification("Agent needs your input", {
+          body: `${event.payload} is waiting`,
+          silent: false,
+        });
+      }
+    });
+
     return () => {
       unlisten.then((fn) => fn());
+      unlistenNeeds.then((fn) => fn());
     };
   }, [setSessions]);
 }

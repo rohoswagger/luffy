@@ -72,7 +72,16 @@ pub async fn create_session(
 
     state.pty_mgr.attach(session_id.clone(), &tmux_name, move |chunk| {
         if let Some(new_status) = crate::status::detect_status(&chunk) {
-            session_mgr_clone.update_status(&sid, new_status);
+            let prev = session_mgr_clone.get_session(&sid).map(|s| s.status.clone());
+            session_mgr_clone.update_status(&sid, new_status.clone());
+            if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
+                && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
+            {
+                let label = session_mgr_clone.get_session(&sid)
+                    .map(|s| s.name.clone())
+                    .unwrap_or_else(|| sid.clone());
+                let _ = app_clone.emit("agent-needs-input", label);
+            }
         }
         let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
     }).map_err(|e| e.to_string())?;
@@ -133,7 +142,16 @@ pub async fn restore_sessions(
 
         let _ = state.pty_mgr.attach(session_id, &tmux_name, move |chunk| {
             if let Some(new_status) = crate::status::detect_status(&chunk) {
-                session_mgr_clone.update_status(&sid, new_status);
+                let prev = session_mgr_clone.get_session(&sid).map(|s| s.status.clone());
+                session_mgr_clone.update_status(&sid, new_status.clone());
+                if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
+                    && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
+                {
+                    let label = session_mgr_clone.get_session(&sid)
+                        .map(|s| s.name.clone())
+                        .unwrap_or_else(|| sid.clone());
+                    let _ = app_clone.emit("agent-needs-input", label);
+                }
             }
             let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
         });

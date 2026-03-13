@@ -2,6 +2,7 @@ pub mod session;
 pub mod status;
 pub mod commands;
 pub mod pty_stream;
+pub mod git;
 
 use session::SessionManager;
 use pty_stream::PtyManager;
