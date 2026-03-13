@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
 import { formatRelativeTime } from "../utils/time";
+import { sortSessionsByPriority } from "../utils/sessions";
 
 interface Props {
   sessions: SessionData[];
@@ -44,6 +45,7 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
   };
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
+  const sortedSessions = sortSessionsByPriority(sessions);
 
   return (
     <aside style={{
@@ -92,7 +94,7 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
             No sessions. Press + to start.
           </div>
         )}
-        {sessions.map((session) => (
+        {sortedSessions.map((session) => (
           <div
             key={session.id}
             data-active={session.id === activeId}

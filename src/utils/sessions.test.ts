@@ -1,10 +1,38 @@
 import { describe, it, expect } from "vitest";
-import { nextWaitingSessionId } from "./sessions";
+import { nextWaitingSessionId, sortSessionsByPriority } from "./sessions";
 import type { SessionData } from "../store/sessions";
 
 const makeSession = (id: string, status: SessionData["status"]): SessionData => ({
   id, name: id, tmux_session: "", status, agent_type: "generic",
   worktree_path: null, branch: null, created_at: "", last_activity: "", total_cost_usd: 0,
+});
+
+describe("sortSessionsByPriority", () => {
+  it("puts WAITING before THINKING before IDLE before ERROR before DONE", () => {
+    const sessions = [
+      makeSession("done", "DONE"),
+      makeSession("error", "ERROR"),
+      makeSession("idle", "IDLE"),
+      makeSession("thinking", "THINKING"),
+      makeSession("waiting", "WAITING"),
+    ];
+    const sorted = sortSessionsByPriority(sessions);
+    expect(sorted[0].id).toBe("waiting");
+    expect(sorted[1].id).toBe("thinking");
+    expect(sorted[2].id).toBe("idle");
+    expect(sorted[3].id).toBe("error");
+    expect(sorted[4].id).toBe("done");
+  });
+
+  it("preserves relative order within same status", () => {
+    const sessions = [
+      makeSession("w1", "WAITING"),
+      makeSession("w2", "WAITING"),
+    ];
+    const sorted = sortSessionsByPriority(sessions);
+    expect(sorted[0].id).toBe("w1");
+    expect(sorted[1].id).toBe("w2");
+  });
 });
 
 describe("nextWaitingSessionId", () => {
