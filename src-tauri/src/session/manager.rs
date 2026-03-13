@@ -379,8 +379,10 @@ impl SessionManager {
 
 /// Strip ANSI escape codes and return the last non-empty line, truncated to 80 chars.
 pub fn extract_preview(raw: &str) -> String {
-    // Remove ANSI/VT escape sequences (CSI sequences including private mode params) and carriage returns
-    let ansi_re = regex::Regex::new(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[A-Za-z]|\r").unwrap();
+    use std::sync::OnceLock;
+    static ANSI_RE: OnceLock<regex::Regex> = OnceLock::new();
+    let ansi_re = ANSI_RE
+        .get_or_init(|| regex::Regex::new(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[A-Za-z]|\r").unwrap());
     let clean = ansi_re.replace_all(raw, "");
     clean
         .lines()
