@@ -36,7 +36,12 @@ const GRID_STYLES: Record<Layout, React.CSSProperties> = {
 
 const SLOT_COUNTS: Record<Layout, number> = { "1up": 1, "2up": 2, "4up": 4 };
 
-export const PaneGrid = memo(function PaneGrid({ sessions, activeId, onActivate, layout }: Props) {
+export const PaneGrid = memo(function PaneGrid({
+  sessions,
+  activeId,
+  onActivate,
+  layout,
+}: Props) {
   const slotCount = SLOT_COUNTS[layout];
   const slots = Array.from(
     { length: slotCount },

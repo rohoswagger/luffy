@@ -8,6 +8,7 @@ you should optimize the experience for people using claude code and codex, but g
 don't worry about pushing changes to remote for now
 make sure to maintain a README.md, CLAUDE.md, and .claude/skills and .claude/agents for any repetitive tasks you encounter. feel free to tune them as you please!
 fix bugs as you go along! you should be actively on the look for bugs periodically and fix any ones you find
+invest in performance improvements, UX, code quality, these are all wins as well
 make sure you do incremental commits!
 
 An example use case of this is: i leave you running on a vm overnight, i come back and the app has been churning away all night and has improved significantly!
@@ -15,3 +16,5 @@ An example use case of this is: i leave you running on a vm overnight, i come ba
 use bun for all js package management, not npm
 
 simplicity is key!! if you can remove a dependency or simplify logic, that's a win. your goal is to stack wins and build the best product
+
+make sure you document all important principles in markdown files, to ensure consistency and a multi-tiered memory system
