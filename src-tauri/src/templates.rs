@@ -81,7 +81,6 @@ pub fn delete_template(id: &str) -> Result<Vec<SessionTemplate>> {
 mod tests {
     use super::*;
     use std::env;
-    use std::sync::Mutex;
 
     fn with_temp_home<F: FnOnce()>(f: F) {
         let _guard = crate::TEST_HOME_LOCK
