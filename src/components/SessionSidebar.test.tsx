@@ -6,8 +6,8 @@ import type { SessionData } from "../store/sessions";
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
 
 const mockSessions: SessionData[] = [
-  { id: "1", name: "feature-auth", tmux_session: "luffy-abc", status: "THINKING", agent_type: "claude-code", worktree_path: "/repo", branch: "feat/auth", created_at: "", last_activity: "", total_cost_usd: 0.123, note: null },
-  { id: "2", name: "fix-bug-42", tmux_session: "luffy-def", status: "WAITING", agent_type: "aider", worktree_path: null, branch: "fix/bug-42", created_at: "", last_activity: "", total_cost_usd: 0, note: "fixing the login regression" },
+  { id: "1", name: "feature-auth", tmux_session: "luffy-abc", status: "THINKING", agent_type: "claude-code", worktree_path: "/repo", branch: "feat/auth", created_at: "", last_activity: "", total_cost_usd: 0.123, cost_budget_usd: 0, note: null, last_output_preview: "" },
+  { id: "2", name: "fix-bug-42", tmux_session: "luffy-def", status: "WAITING", agent_type: "aider", worktree_path: null, branch: "fix/bug-42", created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0, note: "fixing the login regression", last_output_preview: "Running tests..." },
 ];
 
 describe("SessionSidebar", () => {
@@ -120,5 +120,30 @@ describe("SessionSidebar", () => {
     const noNote = [{ ...mockSessions[0], note: null }];
     render(<SessionSidebar sessions={noNote} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
     expect(screen.queryByTitle(/edit note/i)).toBeNull();
+  });
+
+  it("shows output preview when last_output_preview is set", () => {
+    render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
+    expect(screen.getByText("Running tests...")).toBeInTheDocument();
+  });
+
+  it("calls onMarkDone when ✓ button clicked", () => {
+    const onMarkDone = vi.fn();
+    render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onMarkDone={onMarkDone} />);
+    const markDoneBtns = screen.getAllByTitle("Mark as done");
+    fireEvent.click(markDoneBtns[0]);
+    expect(onMarkDone).toHaveBeenCalled();
+  });
+
+  it("hides ✓ button for DONE sessions", () => {
+    const doneSessions = [{ ...mockSessions[0], status: "DONE" as const }];
+    render(<SessionSidebar sessions={doneSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onMarkDone={vi.fn()} />);
+    expect(screen.queryByTitle("Mark as done")).toBeNull();
+  });
+
+  it("shows cost/budget when budget is set", () => {
+    const sessions = [{ ...mockSessions[0], total_cost_usd: 2.5, cost_budget_usd: 5.0 }];
+    render(<SessionSidebar sessions={sessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
+    expect(screen.getByText(/\$2\.50\/\$5\.00/)).toBeInTheDocument();
   });
 });
