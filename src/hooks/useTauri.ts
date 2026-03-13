@@ -15,7 +15,9 @@ export function useTauriEvents() {
     invoke<SessionData[]>("restore_sessions")
       .then(setSessions)
       .catch(() => {
-        invoke<SessionData[]>("list_sessions").then(setSessions).catch(() => {});
+        invoke<SessionData[]>("list_sessions")
+          .then(setSessions)
+          .catch(() => {});
       });
 
     const unlisten = listen<SessionData[]>("sessions-updated", (event) => {
@@ -23,9 +25,12 @@ export function useTauriEvents() {
     });
 
     const unlistenNeeds = listen<string>("agent-needs-input", (event) => {
+      const sessions = useSessionStore.getState().sessions;
+      const session = sessions.find((s) => s.id === event.payload);
+      const name = session?.name ?? event.payload;
       if (Notification.permission === "granted") {
         new Notification("Agent needs your input", {
-          body: `${event.payload} is waiting`,
+          body: `${name} is waiting`,
           silent: false,
         });
       }
@@ -74,7 +79,14 @@ export function useTauriEvents() {
   }, [setSessions]);
 }
 
-export async function createSession(args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string; create_worktree?: boolean; cost_budget_usd?: number }) {
+export async function createSession(args: {
+  name: string;
+  agent_type: string;
+  working_dir: string | null;
+  startup_command?: string;
+  create_worktree?: boolean;
+  cost_budget_usd?: number;
+}) {
   return invoke<SessionData>("create_session", { args });
 }
 
