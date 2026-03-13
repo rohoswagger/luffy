@@ -135,7 +135,6 @@ export const BroadcastBar = memo(function BroadcastBar({
             fontWeight: 700,
             padding: "2px 8px",
             fontSize: "var(--text-xs)",
-            opacity: value.trim() ? 1 : 0.4,
           }}
         >
           ↵ {waitingCount} waiting
@@ -151,7 +150,6 @@ export const BroadcastBar = memo(function BroadcastBar({
           fontSize: "var(--text-xs)",
           color: "var(--purple)",
           borderColor: "var(--purple)",
-          opacity: value.trim() ? 1 : 0.4,
         }}
       >
         ↵ all

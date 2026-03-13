@@ -220,6 +220,11 @@ h3,
   color: var(--color-sumi);
   opacity: 1 !important;
 }
+.btn-icon:focus-visible {
+  outline: 1.5px solid var(--color-momo);
+  outline-offset: 2px;
+  opacity: 1;
+}
 
 /* Toolbar button */
 .btn-toolbar {
@@ -438,6 +443,21 @@ select.input {
 :focus-visible {
   outline: 1.5px solid var(--color-momo);
   outline-offset: 2px;
+}
+
+/* Session tab strip — show thin scrollbar on hover */
+.session-tabs {
+  scrollbar-width: none;
+}
+.session-tabs:hover {
+  scrollbar-width: thin;
+}
+.session-tabs::-webkit-scrollbar {
+  height: 2px;
+}
+.session-tabs::-webkit-scrollbar-thumb {
+  background: var(--color-kage-deep);
+  border-radius: var(--r-pill);
 }
 
 /* Hairline divider (Shibui) */

@@ -99,7 +99,12 @@ export function TerminalPane({
 
     let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
-      fitAddon.fit();
+      try {
+        fitAddon.fit();
+      } catch {
+        // fit() throws if container has zero dimensions during transitions
+        return;
+      }
       if (resizeTimer) clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
         syncSize();
@@ -130,7 +135,7 @@ export function TerminalPane({
           fontSize: 13,
         }}
       >
-        Select a session from the sidebar, or press + to create one.
+        Press ⌘N to start a session · ⌘B sidebar · ⌘K palette
       </div>
     );
   }

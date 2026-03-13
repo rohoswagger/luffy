@@ -40,9 +40,9 @@ describe("TerminalPane", () => {
     expect(container.querySelector(".terminal-container")).toBeTruthy();
   });
 
-  it("renders empty state when no sessionId", () => {
+  it("renders empty state with keyboard shortcut when no sessionId", () => {
     render(<TerminalPane sessionId={null} tmuxSession={null} active />);
-    expect(screen.getByText(/select a session/i)).toBeInTheDocument();
+    expect(screen.getByText(/⌘N/)).toBeInTheDocument();
   });
 
   it("calls resize_pty after initial fit", async () => {

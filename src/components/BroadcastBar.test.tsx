@@ -110,6 +110,8 @@ describe("BroadcastBar", () => {
     fireEvent.click(screen.getByText(/BROADCAST \(2\)/));
     const btn = screen.getByTitle(/send to all/i);
     expect(btn).toBeDisabled();
+    // No inline opacity override — CSS .btn:disabled handles opacity + cursor
+    expect(btn.style.opacity).toBe("");
   });
 
   it("enables broadcast button when input has text", () => {
@@ -118,7 +120,10 @@ describe("BroadcastBar", () => {
     fireEvent.change(screen.getByPlaceholderText(/broadcast/i), {
       target: { value: "run tests" },
     });
-    expect(screen.getByTitle(/send to all/i)).not.toBeDisabled();
+    const btn = screen.getByTitle(/send to all/i);
+    expect(btn).not.toBeDisabled();
+    // No inline opacity override — CSS handles enabled state
+    expect(btn.style.opacity).toBe("");
   });
 
   it("does not call onBroadcast with whitespace-only input", () => {

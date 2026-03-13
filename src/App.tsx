@@ -507,6 +507,7 @@ export default function App() {
             >
               {/* Session tabs */}
               <div
+                className="session-tabs"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -514,7 +515,6 @@ export default function App() {
                   overflowX: "auto",
                   overflowY: "hidden",
                   flex: 1,
-                  scrollbarWidth: "none",
                 }}
               >
                 {sessions.map((s, i) => (
