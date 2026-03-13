@@ -355,8 +355,11 @@ pub async fn save_template(
     startup_command: Option<String>,
     cost_budget_usd: Option<f64>,
 ) -> Result<Vec<crate::templates::SessionTemplate>, String> {
+    if name.trim().is_empty() {
+        return Err("Template name cannot be empty".to_string());
+    }
     let t = crate::templates::SessionTemplate::new(
-        &name,
+        name.trim(),
         &agent_type,
         working_dir,
         count,
