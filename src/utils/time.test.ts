@@ -58,4 +58,9 @@ describe("formatDuration", () => {
     expect(formatDuration("", now)).toBe("");
     expect(formatDuration("not-a-date", now)).toBe("");
   });
+
+  it("returns '<1m' for future timestamps (clock skew protection)", () => {
+    const future = new Date(now.getTime() + 5000).toISOString();
+    expect(formatDuration(future, now)).toBe("<1m");
+  });
 });

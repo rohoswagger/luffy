@@ -102,6 +102,6 @@ All Tauri commands. Key patterns:
 
 ## Test Patterns
 
-- Rust: `cd src-tauri && cargo test` — 122 tests
+- Rust: `cd src-tauri && cargo test` — 124 tests
 - Tests that mutate `HOME`: use `with_temp_home(|| { ... })` via `crate::TEST_HOME_LOCK`
-- Frontend: `bun run test --run` — 180 tests
+- Frontend: `bun run test --run` — 183 tests

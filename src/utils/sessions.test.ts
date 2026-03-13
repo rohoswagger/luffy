@@ -48,6 +48,19 @@ describe("isSessionStuck", () => {
     expect(isSessionStuck(s, now)).toBe(false);
   });
 
+  it("returns false at exactly 10 minutes (threshold is strictly greater)", () => {
+    const s = makeSession("a", "THINKING");
+    s.last_activity = "2024-01-01T11:50:00Z"; // exactly 10 min ago
+    expect(isSessionStuck(s, now)).toBe(false);
+  });
+
+  it("returns true at 10 minutes + 1 second", () => {
+    const s = makeSession("a", "THINKING");
+    // 10 min + 1 sec ago
+    s.last_activity = "2024-01-01T11:49:59Z";
+    expect(isSessionStuck(s, now)).toBe(true);
+  });
+
   it("returns false for IDLE, ERROR, DONE sessions", () => {
     for (const status of ["IDLE", "ERROR", "DONE"] as const) {
       const s = makeSession("a", status);
