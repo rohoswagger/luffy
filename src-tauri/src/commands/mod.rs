@@ -574,6 +574,16 @@ pub async fn resize_pty(
     Ok(())
 }
 
+/// Return the stored (ANSI-stripped) output buffer for a session.
+/// Used by the frontend to replay history when re-mounting a TerminalPane.
+#[tauri::command]
+pub async fn get_pty_output(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<String, String> {
+    Ok(state.pty_mgr.get_output(&session_id).unwrap_or_default())
+}
+
 /// Search ANSI-stripped output buffers across all sessions.
 #[derive(Serialize, Clone)]
 pub struct SearchResult {

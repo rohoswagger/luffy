@@ -332,15 +332,13 @@ export default function App() {
           {/* Terminal fills entire window */}
           <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
             {layout === "1up" ? (
-              sessions.length > 0 ? (
-                sessions.map((s) => (
-                  <TerminalPane
-                    key={s.id}
-                    sessionId={s.id}
-                    tmuxSession={s.tmux_session}
-                    active={s.id === activeSessionId}
-                  />
-                ))
+              activeSession ? (
+                <TerminalPane
+                  key={activeSession.id}
+                  sessionId={activeSession.id}
+                  tmuxSession={activeSession.tmux_session}
+                  active
+                />
               ) : (
                 <div
                   style={{

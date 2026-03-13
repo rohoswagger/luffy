@@ -54,4 +54,13 @@ describe("TerminalPane", () => {
       );
     });
   });
+
+  it("fetches stored output on mount via get_pty_output", async () => {
+    render(<TerminalPane sessionId="s1" tmuxSession="luffy-s1" active />);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("get_pty_output", {
+        sessionId: "s1",
+      });
+    });
+  });
 });

@@ -75,6 +75,13 @@ export function TerminalPane({
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    // Replay stored output buffer so terminal has history on mount
+    invoke<string>("get_pty_output", { sessionId })
+      .then((stored) => {
+        if (stored) term.write(stored);
+      })
+      .catch(() => {});
+
     term.onData((data: string) => {
       invoke("send_input", { sessionId, input: data }).catch(console.error);
     });

@@ -277,6 +277,7 @@ pub fn run() {
             commands::restore_sessions,
             commands::search_output,
             commands::resize_pty,
+            commands::get_pty_output,
             commands::get_session_events,
             commands::export_session_output,
             commands::list_templates,
