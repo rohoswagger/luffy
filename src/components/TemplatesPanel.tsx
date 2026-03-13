@@ -47,6 +47,9 @@ export function TemplatesPanel({ open, onClose, onLaunch }: Props) {
   return (
     <div className="panel-overlay" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Session Templates"
         className="panel-box"
         style={{ width: 520 }}
         onClick={(e) => e.stopPropagation()}

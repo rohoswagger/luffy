@@ -77,6 +77,9 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
   return (
     <div className="panel-overlay" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Search Output"
         className="panel-box"
         style={{
           width: 620,

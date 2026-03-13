@@ -55,7 +55,7 @@ const sessions: SessionData[] = [
 ];
 
 describe("CommandPalette", () => {
-  it("renders when open", () => {
+  it("renders when open with dialog role", () => {
     render(
       <CommandPalette
         open
@@ -65,6 +65,7 @@ describe("CommandPalette", () => {
       />,
     );
     expect(screen.getByPlaceholderText(/search sessions/i)).toBeInTheDocument();
+    expect(screen.getByRole("dialog")).toHaveAttribute("aria-modal", "true");
   });
 
   it("does not render when closed", () => {

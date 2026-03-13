@@ -150,6 +150,7 @@ export default function App() {
       setActiveSession(session.id);
     } catch (err) {
       console.error("Failed to create session:", err);
+      setToast("Failed to create session");
     }
   }, [sessions, setActiveSession]);
 
@@ -168,6 +169,7 @@ export default function App() {
         setActiveSession(session.id);
       } catch (err) {
         console.error("Failed to create session:", err);
+        setToast("Failed to create session");
       }
     },
     [setActiveSession],
@@ -180,6 +182,7 @@ export default function App() {
         setActiveSession(session.id);
       } catch (err) {
         console.error("Failed to fork session:", err);
+        setToast("Failed to fork session");
       }
     },
     [setActiveSession],
@@ -200,6 +203,7 @@ export default function App() {
       await invoke("mark_session_done", { sessionId: id });
     } catch (err) {
       console.error("Failed to mark session done:", err);
+      setToast("Failed to mark session done");
     }
   }, []);
 
@@ -227,6 +231,7 @@ export default function App() {
         setActiveSession(session.id);
       } catch (err) {
         console.error("Failed to restart session:", err);
+        setToast("Failed to restart session");
       }
     },
     [setActiveSession],
@@ -243,6 +248,7 @@ export default function App() {
         }
       } catch (err) {
         console.error("Failed to kill session:", err);
+        setToast("Failed to kill session");
       }
     },
     [sessions, activeSessionId, setActiveSession, removeSession],
@@ -651,15 +657,26 @@ export default function App() {
                     </button>
                   )}
                   {errorCount > 0 && (
-                    <span
-                      style={{
-                        color: "var(--status-error)",
-                        fontWeight: 700,
+                    <button
+                      onClick={() => {
+                        const err = sessions.find((s) => s.status === "ERROR");
+                        if (err) setActiveSession(err.id);
                       }}
-                      title={`${errorCount} session${errorCount > 1 ? "s" : ""} with errors`}
+                      style={{
+                        padding: "1px 6px",
+                        border: "none",
+                        background: "var(--status-error)",
+                        borderRadius: "var(--r-sm)",
+                        color: "var(--color-paper)",
+                        fontSize: "var(--text-xs)",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "var(--font-sans)",
+                      }}
+                      title={`${errorCount} error${errorCount > 1 ? "s" : ""} — jump to first`}
                     >
                       {errorCount}✕
-                    </span>
+                    </button>
                   )}
                   {doneCount > 0 && (
                     <span

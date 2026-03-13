@@ -68,6 +68,9 @@ export function KeyboardHelp({ open, onClose }: Props) {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Keyboard Shortcuts"
         className="panel-box"
         style={{
           padding: 24,

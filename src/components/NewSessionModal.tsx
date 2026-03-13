@@ -87,6 +87,9 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   return (
     <div className="overlay" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="New Session"
         className="modal"
         style={{ width: 420 }}
         onClick={(e) => e.stopPropagation()}

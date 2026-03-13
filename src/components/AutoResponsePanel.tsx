@@ -81,6 +81,9 @@ export function AutoResponsePanel({ open, onClose }: Props) {
   return (
     <div className="panel-overlay" style={{ paddingTop: 80 }} onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Auto-Response Patterns"
         className="panel-box"
         style={{ width: 540 }}
         onClick={(e) => e.stopPropagation()}

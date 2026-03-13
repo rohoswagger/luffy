@@ -73,6 +73,9 @@ export function CommandPalette({ open, sessions, onSelect, onClose }: Props) {
   return (
     <div className="panel-overlay" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command Palette"
         className="panel-box"
         style={{ width: 560 }}
         onClick={(e) => e.stopPropagation()}
