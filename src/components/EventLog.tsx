@@ -15,6 +15,7 @@ interface SessionEventData {
 interface Props {
   sessionId: string;
   sessionName: string;
+  lastActivity?: string;
 }
 
 const EVENT_COLORS: Record<string, string> = {
@@ -25,33 +26,64 @@ const EVENT_COLORS: Record<string, string> = {
 
 function renderKind(kind: EventKind): string {
   switch (kind.type) {
-    case "Created": return "Created";
-    case "StatusChanged": return `${kind.data?.from} → ${kind.data?.to}`;
-    case "CostUpdated": return `Cost $${kind.data?.cost_usd?.toFixed(3)}`;
-    default: return kind.type;
+    case "Created":
+      return "Created";
+    case "StatusChanged":
+      return `${kind.data?.from} → ${kind.data?.to}`;
+    case "CostUpdated":
+      return `Cost $${kind.data?.cost_usd?.toFixed(3)}`;
+    default:
+      return kind.type;
   }
 }
 
-export function EventLog({ sessionId, sessionName }: Props) {
+export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
   const [events, setEvents] = useState<SessionEventData[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     setLoaded(false);
     invoke<SessionEventData[]>("get_session_events", { sessionId })
-      .then((evs) => { setEvents(evs); setLoaded(true); })
+      .then((evs) => {
+        setEvents(evs);
+        setLoaded(true);
+      })
       .catch(() => setLoaded(true));
-  }, [sessionId]);
+  }, [sessionId, lastActivity]);
 
   return (
     <div style={{ padding: "12px 0", fontFamily: "inherit" }}>
-      <div style={{ padding: "0 14px 8px", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)", letterSpacing: "0.05em" }}>
+      <div
+        style={{
+          padding: "0 14px 8px",
+          fontSize: 11,
+          fontWeight: 600,
+          color: "var(--text-secondary)",
+          letterSpacing: "0.05em",
+        }}
+      >
         EVENT LOG — {sessionName}
       </div>
       {!loaded ? (
-        <div style={{ padding: "8px 14px", color: "var(--text-secondary)", fontSize: 12 }}>Loading…</div>
+        <div
+          style={{
+            padding: "8px 14px",
+            color: "var(--text-secondary)",
+            fontSize: 12,
+          }}
+        >
+          Loading…
+        </div>
       ) : events.length === 0 ? (
-        <div style={{ padding: "8px 14px", color: "var(--text-secondary)", fontSize: 12 }}>No events recorded.</div>
+        <div
+          style={{
+            padding: "8px 14px",
+            color: "var(--text-secondary)",
+            fontSize: 12,
+          }}
+        >
+          No events recorded.
+        </div>
       ) : (
         [...events].reverse().map((ev, i) => (
           <div
@@ -65,10 +97,21 @@ export function EventLog({ sessionId, sessionName }: Props) {
               fontSize: 12,
             }}
           >
-            <span style={{ color: "var(--text-secondary)", fontSize: 10, minWidth: 60, flexShrink: 0 }}>
+            <span
+              style={{
+                color: "var(--text-secondary)",
+                fontSize: 10,
+                minWidth: 60,
+                flexShrink: 0,
+              }}
+            >
               {formatRelativeTime(ev.timestamp)}
             </span>
-            <span style={{ color: EVENT_COLORS[ev.kind.type] ?? "var(--text-primary)" }}>
+            <span
+              style={{
+                color: EVENT_COLORS[ev.kind.type] ?? "var(--text-primary)",
+              }}
+            >
               {renderKind(ev.kind)}
             </span>
           </div>

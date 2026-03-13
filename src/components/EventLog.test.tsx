@@ -3,13 +3,24 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { EventLog } from "./EventLog";
 
 const mockInvoke = vi.fn();
-vi.mock("@tauri-apps/api/core", () => ({ invoke: (...args: unknown[]) => mockInvoke(...args) }));
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
 
 const mockEvents = [
   { timestamp: "2026-03-12T00:00:00Z", kind: { type: "Created" } },
-  { timestamp: "2026-03-12T01:00:00Z", kind: { type: "StatusChanged", data: { from: "IDLE", to: "THINKING" } } },
-  { timestamp: "2026-03-12T02:00:00Z", kind: { type: "CostUpdated", data: { cost_usd: 0.05 } } },
-  { timestamp: "2026-03-12T03:00:00Z", kind: { type: "StatusChanged", data: { from: "THINKING", to: "WAITING" } } },
+  {
+    timestamp: "2026-03-12T01:00:00Z",
+    kind: { type: "StatusChanged", data: { from: "IDLE", to: "THINKING" } },
+  },
+  {
+    timestamp: "2026-03-12T02:00:00Z",
+    kind: { type: "CostUpdated", data: { cost_usd: 0.05 } },
+  },
+  {
+    timestamp: "2026-03-12T03:00:00Z",
+    kind: { type: "StatusChanged", data: { from: "THINKING", to: "WAITING" } },
+  },
 ];
 
 describe("EventLog", () => {
@@ -18,8 +29,14 @@ describe("EventLog", () => {
   it("renders loading then events", async () => {
     mockInvoke.mockResolvedValue(mockEvents);
     render(<EventLog sessionId="s1" sessionName="my-agent" />);
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("get_session_events", { sessionId: "s1" }));
-    await waitFor(() => expect(screen.getByText(/Created/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("get_session_events", {
+        sessionId: "s1",
+      }),
+    );
+    await waitFor(() =>
+      expect(screen.getByText(/Created/i)).toBeInTheDocument(),
+    );
   });
 
   it("shows status changes", async () => {
@@ -43,8 +60,36 @@ describe("EventLog", () => {
   it("refetches when sessionId changes", async () => {
     mockInvoke.mockResolvedValue([]);
     const { rerender } = render(<EventLog sessionId="s1" sessionName="a" />);
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("get_session_events", { sessionId: "s1" }));
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("get_session_events", {
+        sessionId: "s1",
+      }),
+    );
     rerender(<EventLog sessionId="s2" sessionName="b" />);
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("get_session_events", { sessionId: "s2" }));
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("get_session_events", {
+        sessionId: "s2",
+      }),
+    );
+  });
+
+  it("refetches when lastActivity changes", async () => {
+    mockInvoke.mockResolvedValue([]);
+    const { rerender } = render(
+      <EventLog
+        sessionId="s1"
+        sessionName="a"
+        lastActivity="2026-03-12T00:00:00Z"
+      />,
+    );
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(1));
+    rerender(
+      <EventLog
+        sessionId="s1"
+        sessionName="a"
+        lastActivity="2026-03-12T01:00:00Z"
+      />,
+    );
+    await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
   });
 });

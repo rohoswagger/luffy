@@ -418,6 +418,7 @@ export default function App() {
               <EventLog
                 sessionId={activeSession.id}
                 sessionName={activeSession.name}
+                lastActivity={activeSession.last_activity ?? undefined}
               />
             </div>
           )}
