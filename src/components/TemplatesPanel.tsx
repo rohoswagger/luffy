@@ -25,7 +25,10 @@ export function TemplatesPanel({ open, onClose, onLaunch }: Props) {
     if (!open) return;
     invoke<Template[]>("list_templates")
       .then(setTemplates)
-      .catch(() => setTemplates([]));
+      .catch((err: unknown) => {
+        console.error("Failed to list templates:", err);
+        setTemplates([]);
+      });
   }, [open]);
 
   if (!open) return null;

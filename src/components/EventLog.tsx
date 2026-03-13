@@ -48,7 +48,10 @@ export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
         setEvents(evs);
         setLoaded(true);
       })
-      .catch(() => setLoaded(true));
+      .catch((err: unknown) => {
+        console.error("Failed to fetch session events:", err);
+        setLoaded(true);
+      });
   }, [sessionId, lastActivity]);
 
   return (

@@ -14,6 +14,7 @@ import { KeyboardHelp } from "./components/KeyboardHelp";
 import { TemplatesPanel } from "./components/TemplatesPanel";
 import { AutoResponsePanel } from "./components/AutoResponsePanel";
 import { Toast } from "./components/Toast";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { useSessionStore } from "./store/sessions";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -252,226 +253,205 @@ export default function App() {
         onClearDone={handleClearDone}
       />
 
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-          background: "var(--bg-primary)",
-        }}
-      >
-        {/* Toolbar */}
+      <ErrorBoundary>
         <div
           style={{
-            height: 36,
-            background: "var(--bg-secondary)",
-            borderBottom: "1px solid var(--border)",
+            flex: 1,
             display: "flex",
-            alignItems: "center",
-            padding: "0 12px",
-            gap: 10,
-            fontSize: 12,
-            color: "var(--text-secondary)",
-            flexShrink: 0,
+            flexDirection: "column",
+            overflow: "hidden",
+            background: "var(--bg-primary)",
           }}
         >
-          {layout === "1up" && activeSession && (
-            <>
-              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                {activeSession.name}
-              </span>
-              {activeSession.branch && <span>⎇ {activeSession.branch}</span>}
-              {activeSession.worktree_path && (
-                <span style={{ fontSize: 11 }}>
-                  {activeSession.worktree_path}
-                </span>
-              )}
-            </>
-          )}
-          {layout !== "1up" && (
-            <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
-              {sessions.length} session{sessions.length !== 1 ? "s" : ""}
-            </span>
-          )}
+          {/* Toolbar */}
           <div
             style={{
-              marginLeft: "auto",
+              height: 36,
+              background: "var(--bg-secondary)",
+              borderBottom: "1px solid var(--border)",
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              padding: "0 12px",
+              gap: 10,
+              fontSize: 12,
+              color: "var(--text-secondary)",
+              flexShrink: 0,
             }}
           >
-            {waitingCount > 0 && (
-              <button
-                title={`${waitingCount} session${waitingCount > 1 ? "s" : ""} waiting for input — Cmd+Shift+A to jump`}
-                onClick={() => {
-                  const next = nextWaitingSessionId(sessions, activeSessionId);
-                  if (next) setActiveSession(next);
-                }}
-                style={{
-                  background: "#d29922",
-                  border: "none",
-                  borderRadius: 4,
-                  color: "#000",
-                  cursor: "pointer",
-                  padding: "2px 8px",
-                  fontSize: 11,
-                  fontWeight: 700,
-                }}
-              >
-                {waitingCount} waiting
-              </button>
+            {layout === "1up" && activeSession && (
+              <>
+                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
+                  {activeSession.name}
+                </span>
+                {activeSession.branch && <span>⎇ {activeSession.branch}</span>}
+                {activeSession.worktree_path && (
+                  <span style={{ fontSize: 11 }}>
+                    {activeSession.worktree_path}
+                  </span>
+                )}
+              </>
             )}
-            {activeSession && (
-              <button
-                title="Export session output to ~/Downloads"
-                onClick={() => {
-                  invoke<string>("export_session_output", {
-                    sessionId: activeSession.id,
-                  })
-                    .then((path) => setToast(`Saved: ${path}`))
-                    .catch((e) => console.error("Export failed:", e));
-                }}
-                style={{
-                  background: "none",
-                  border: "1px solid var(--border)",
-                  borderRadius: 4,
-                  color: "var(--text-secondary)",
-                  cursor: "pointer",
-                  padding: "2px 6px",
-                  fontSize: 11,
-                }}
-              >
-                ↓ export
-              </button>
+            {layout !== "1up" && (
+              <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
+                {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+              </span>
             )}
-            <button
-              title="Session templates"
-              onClick={() => setShowTemplates(true)}
-              style={{
-                background: "none",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                color: "var(--text-secondary)",
-                cursor: "pointer",
-                padding: "2px 6px",
-                fontSize: 11,
-              }}
-            >
-              ⬡ templates
-            </button>
-            <button
-              title="Auto-respond patterns (Cmd+Shift+R)"
-              onClick={() => setShowAutoRespond(true)}
-              style={{
-                background: "none",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                color: "var(--text-secondary)",
-                cursor: "pointer",
-                padding: "2px 6px",
-                fontSize: 11,
-              }}
-            >
-              ⚡ auto
-            </button>
-            <button
-              title="Toggle event log (Cmd+L)"
-              onClick={() => setShowEventLog((v) => !v)}
-              style={{
-                background: showEventLog ? "var(--bg-tertiary)" : "none",
-                border: "1px solid var(--border)",
-                borderRadius: 4,
-                color: "var(--text-secondary)",
-                cursor: "pointer",
-                padding: "2px 6px",
-                fontSize: 11,
-              }}
-            >
-              ☰ log
-            </button>
-            <LayoutSwitcher current={layout} onChange={setLayout} />
-          </div>
-        </div>
-
-        {/* Pane area + optional event log side panel */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
-          {layout === "1up" ? (
-            sessions.length > 0 ? (
-              sessions.map((s) => (
-                <TerminalPane
-                  key={s.id}
-                  sessionId={s.id}
-                  tmuxSession={s.tmux_session}
-                  active={s.id === activeSessionId}
-                />
-              ))
-            ) : (
-              <TerminalPane sessionId={null} tmuxSession={null} active />
-            )
-          ) : (
-            <PaneGrid
-              sessions={sessions}
-              activeId={activeSessionId}
-              onActivate={setActiveSession}
-              layout={layout}
-            />
-          )}
-          {showEventLog && activeSession && (
             <div
               style={{
-                width: 280,
-                borderLeft: "1px solid var(--border)",
-                background: "var(--bg-secondary)",
-                overflowY: "auto",
-                flexShrink: 0,
+                marginLeft: "auto",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
               }}
             >
-              <EventLog
-                sessionId={activeSession.id}
-                sessionName={activeSession.name}
-                lastActivity={activeSession.last_activity ?? undefined}
-              />
+              {waitingCount > 0 && (
+                <button
+                  title={`${waitingCount} session${waitingCount > 1 ? "s" : ""} waiting — Cmd+Shift+A`}
+                  onClick={() => {
+                    const next = nextWaitingSessionId(
+                      sessions,
+                      activeSessionId,
+                    );
+                    if (next) setActiveSession(next);
+                  }}
+                  className="btn btn-toolbar"
+                  style={{
+                    background: "var(--yellow)",
+                    borderColor: "var(--yellow)",
+                    color: "#000",
+                    fontWeight: 700,
+                  }}
+                >
+                  {waitingCount} waiting
+                </button>
+              )}
+              {activeSession && (
+                <button
+                  title="Export session output to ~/Downloads"
+                  onClick={() => {
+                    invoke<string>("export_session_output", {
+                      sessionId: activeSession.id,
+                    })
+                      .then((path) => setToast(`Saved: ${path}`))
+                      .catch((e) => console.error("Export failed:", e));
+                  }}
+                  className="btn btn-ghost btn-toolbar"
+                >
+                  ↓ export
+                </button>
+              )}
+              <button
+                title="Session templates (Cmd+T)"
+                onClick={() => setShowTemplates(true)}
+                className="btn btn-ghost btn-toolbar"
+              >
+                ⬡ templates
+              </button>
+              <button
+                title="Auto-respond patterns (Cmd+Shift+R)"
+                onClick={() => setShowAutoRespond(true)}
+                className="btn btn-ghost btn-toolbar"
+              >
+                ⚡ auto
+              </button>
+              <button
+                title="Toggle event log (Cmd+L)"
+                onClick={() => setShowEventLog((v) => !v)}
+                className="btn btn-ghost btn-toolbar"
+                style={
+                  showEventLog
+                    ? {
+                        background: "var(--bg-4)",
+                        borderColor: "var(--border-strong)",
+                      }
+                    : undefined
+                }
+              >
+                ☰ log
+              </button>
+              <LayoutSwitcher current={layout} onChange={setLayout} />
             </div>
+          </div>
+
+          {/* Pane area + optional event log side panel */}
+          <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+            {layout === "1up" ? (
+              sessions.length > 0 ? (
+                sessions.map((s) => (
+                  <TerminalPane
+                    key={s.id}
+                    sessionId={s.id}
+                    tmuxSession={s.tmux_session}
+                    active={s.id === activeSessionId}
+                  />
+                ))
+              ) : (
+                <TerminalPane sessionId={null} tmuxSession={null} active />
+              )
+            ) : (
+              <PaneGrid
+                sessions={sessions}
+                activeId={activeSessionId}
+                onActivate={setActiveSession}
+                layout={layout}
+              />
+            )}
+            {showEventLog && activeSession && (
+              <div
+                style={{
+                  width: 280,
+                  borderLeft: "1px solid var(--border)",
+                  background: "var(--bg-secondary)",
+                  overflowY: "auto",
+                  flexShrink: 0,
+                }}
+              >
+                <EventLog
+                  sessionId={activeSession.id}
+                  sessionName={activeSession.name}
+                  lastActivity={activeSession.last_activity ?? undefined}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Quick commands — shown when active session is WAITING */}
+          {activeSession?.status === "WAITING" && (
+            <QuickCommands
+              onSend={(cmd) => {
+                invoke("send_input", {
+                  sessionId: activeSession.id,
+                  input: cmd,
+                }).catch(console.error);
+              }}
+            />
+          )}
+
+          {/* Broadcast bar — only when multiple sessions exist */}
+          {sessions.length > 1 && (
+            <BroadcastBar
+              sessionCount={sessions.length}
+              waitingCount={waitingCount}
+              onBroadcast={(text) => {
+                broadcastInput(text).catch(console.error);
+              }}
+              onBroadcastWaiting={(text) => {
+                const waitingSessions = sessions.filter(
+                  (s) => s.status === "WAITING",
+                );
+                import("@tauri-apps/api/core").then(({ invoke }) => {
+                  waitingSessions.forEach((s) =>
+                    invoke("send_input", {
+                      sessionId: s.id,
+                      input: text,
+                    }).catch(console.error),
+                  );
+                });
+              }}
+            />
           )}
         </div>
-
-        {/* Quick commands — shown when active session is WAITING */}
-        {activeSession?.status === "WAITING" && (
-          <QuickCommands
-            onSend={(cmd) => {
-              invoke("send_input", {
-                sessionId: activeSession.id,
-                input: cmd,
-              }).catch(console.error);
-            }}
-          />
-        )}
-
-        {/* Broadcast bar — only when multiple sessions exist */}
-        {sessions.length > 1 && (
-          <BroadcastBar
-            sessionCount={sessions.length}
-            waitingCount={waitingCount}
-            onBroadcast={(text) => {
-              broadcastInput(text).catch(console.error);
-            }}
-            onBroadcastWaiting={(text) => {
-              const waitingSessions = sessions.filter(
-                (s) => s.status === "WAITING",
-              );
-              import("@tauri-apps/api/core").then(({ invoke }) => {
-                waitingSessions.forEach((s) =>
-                  invoke("send_input", { sessionId: s.id, input: text }).catch(
-                    console.error,
-                  ),
-                );
-              });
-            }}
-          />
-        )}
-      </div>
+      </ErrorBoundary>
 
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
       <NewSessionModal
