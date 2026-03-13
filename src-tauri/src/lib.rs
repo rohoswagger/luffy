@@ -18,6 +18,7 @@ use pty_stream::PtyManager;
 use session::SessionManager;
 use std::sync::Arc;
 use tauri::Manager;
+use tauri::menu::{MenuBuilder, SubmenuBuilder, PredefinedMenuItem};
 
 pub struct AppState {
     pub session_mgr: Arc<SessionManager>,
@@ -32,6 +33,36 @@ pub fn run() {
             pty_mgr: Arc::new(PtyManager::new()),
         })
         .setup(|app| {
+            // Custom minimal menu: only essential macOS items (Quit, Copy, Paste, etc.)
+            // This prevents the default menu from intercepting Cmd+N, Cmd+W, Cmd+T, etc.
+            let app_menu = SubmenuBuilder::new(app, "Luffy")
+                .about(None)
+                .separator()
+                .hide()
+                .hide_others()
+                .show_all()
+                .separator()
+                .quit()
+                .build()?;
+            let edit_menu = SubmenuBuilder::new(app, "Edit")
+                .undo()
+                .redo()
+                .separator()
+                .cut()
+                .copy()
+                .paste()
+                .select_all()
+                .build()?;
+            let window_menu = SubmenuBuilder::new(app, "Window")
+                .minimize()
+                .item(&PredefinedMenuItem::fullscreen(app, None)?)
+                .close_window()
+                .build()?;
+            let menu = MenuBuilder::new(app)
+                .items(&[&app_menu, &edit_menu, &window_menu])
+                .build()?;
+            app.set_menu(menu)?;
+
             let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
             let session_mgr = state.session_mgr.clone();
