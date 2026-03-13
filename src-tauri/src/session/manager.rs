@@ -78,6 +78,16 @@ impl SessionManager {
         self.sessions.lock().unwrap().get(session_id).cloned()
     }
 
+    /// Update the running cost of a session (stores the maximum seen so far).
+    pub fn update_cost(&self, session_id: &str, cost: f64) {
+        let mut sessions = self.sessions.lock().unwrap();
+        if let Some(s) = sessions.get_mut(session_id) {
+            if cost > s.total_cost_usd {
+                s.total_cost_usd = cost;
+            }
+        }
+    }
+
     /// Update the status of a session.
     pub fn update_status(&self, session_id: &str, status: AgentStatus) {
         let mut sessions = self.sessions.lock().unwrap();
@@ -120,6 +130,7 @@ impl SessionManager {
                     worktree_path: None,
                     branch: None,
                     agent_type: AgentType::Generic,
+                    total_cost_usd: 0.0,
                 };
                 sessions.insert(session.id.clone(), session.clone());
                 restored.push(session);

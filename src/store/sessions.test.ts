@@ -16,6 +16,7 @@ const mockSession = {
   last_activity: "",
   worktree_path: null,
   branch: null,
+  total_cost_usd: 0,
 };
 
 describe("session store", () => {

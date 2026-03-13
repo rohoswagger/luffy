@@ -100,6 +100,11 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   {session.branch}
                 </span>
               )}
+              {session.total_cost_usd > 0 && (
+                <span style={{ fontSize: 10, color: "#4ade80", marginLeft: "auto", flexShrink: 0 }}>
+                  ${session.total_cost_usd.toFixed(2)}
+                </span>
+              )}
             </div>
           </div>
         ))}

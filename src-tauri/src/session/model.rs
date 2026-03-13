@@ -44,6 +44,7 @@ pub struct Session {
     pub worktree_path: Option<String>,
     pub branch: Option<String>,
     pub agent_type: AgentType,
+    pub total_cost_usd: f64,
 }
 
 impl Session {
@@ -60,6 +61,7 @@ impl Session {
             worktree_path: None,
             branch: None,
             agent_type,
+            total_cost_usd: 0.0,
         }
     }
 }

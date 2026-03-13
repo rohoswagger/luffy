@@ -10,6 +10,7 @@ export interface SessionData {
   branch: string | null;
   created_at: string;
   last_activity: string;
+  total_cost_usd: number;
 }
 
 interface SessionStore {

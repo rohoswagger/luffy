@@ -21,6 +21,7 @@ pub struct SessionDto {
     pub branch: Option<String>,
     pub created_at: String,
     pub last_activity: String,
+    pub total_cost_usd: f64,
 }
 
 impl From<Session> for SessionDto {
@@ -39,6 +40,7 @@ impl From<Session> for SessionDto {
             branch: s.branch,
             created_at: s.created_at.to_rfc3339(),
             last_activity: s.last_activity.to_rfc3339(),
+            total_cost_usd: s.total_cost_usd,
         }
     }
 }
@@ -82,6 +84,9 @@ pub async fn create_session(
                     .unwrap_or_else(|| sid.clone());
                 let _ = app_clone.emit("agent-needs-input", label);
             }
+        }
+        if let Some(cost) = crate::cost::detect_cost(&chunk) {
+            session_mgr_clone.update_cost(&sid, cost);
         }
         let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
     }).map_err(|e| e.to_string())?;
@@ -152,6 +157,9 @@ pub async fn restore_sessions(
                         .unwrap_or_else(|| sid.clone());
                     let _ = app_clone.emit("agent-needs-input", label);
                 }
+            }
+            if let Some(cost) = crate::cost::detect_cost(&chunk) {
+                session_mgr_clone.update_cost(&sid, cost);
             }
             let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
         });
