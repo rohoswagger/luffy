@@ -119,7 +119,11 @@ export default function App() {
 
   // Instant session creation — no modal, just a terminal
   const handleQuickCreate = useCallback(async () => {
-    const name = `agent-${sessions.length + 1}`;
+    const maxNum = sessions.reduce((max, s) => {
+      const m = s.name.match(/^agent-(\d+)$/);
+      return m ? Math.max(max, parseInt(m[1], 10)) : max;
+    }, 0);
+    const name = `agent-${maxNum + 1}`;
     try {
       const session = await createSession({
         name,
@@ -265,17 +269,34 @@ export default function App() {
   });
 
   // Listen for native menu actions (macOS intercepts Cmd+N/W/T at OS level)
+  // Use refs so the listener is registered once (no teardown race on state changes)
+  const menuHandlersRef = useRef({
+    handleQuickCreate,
+    handleKill,
+    activeSessionId,
+  });
+  menuHandlersRef.current = {
+    handleQuickCreate,
+    handleKill,
+    activeSessionId,
+  };
+
   useEffect(() => {
     const unlisten = listen<string>("menu-action", (event) => {
+      const {
+        handleQuickCreate: qc,
+        handleKill: kl,
+        activeSessionId: aid,
+      } = menuHandlersRef.current;
       switch (event.payload) {
         case "new-session":
-          handleQuickCreate();
+          qc();
           break;
         case "new-session-advanced":
           setShowNewModal(true);
           break;
         case "kill-session":
-          if (activeSessionId) handleKill(activeSessionId);
+          if (aid) kl(aid);
           break;
         case "templates":
           setShowTemplates(true);
@@ -285,7 +306,7 @@ export default function App() {
     return () => {
       unlisten.then((fn) => fn()).catch(() => {});
     };
-  }, [handleQuickCreate, handleKill, activeSessionId]);
+  }, []);
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
 
