@@ -69,17 +69,6 @@ export function AutoResponsePanel({ open, onClose }: Props) {
     }
   };
 
-  const overlayStyle: React.CSSProperties = {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(249,248,246,0.7)",
-    zIndex: 200,
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "center",
-    paddingTop: 80,
-  };
-
   const inputStyle: React.CSSProperties = {
     background: "var(--bg-tertiary)",
     border: "1px solid var(--border)",
@@ -90,16 +79,10 @@ export function AutoResponsePanel({ open, onClose }: Props) {
   };
 
   return (
-    <div style={overlayStyle} onClick={onClose}>
+    <div className="panel-overlay" style={{ paddingTop: 80 }} onClick={onClose}>
       <div
-        style={{
-          width: 540,
-          background: "var(--color-paper)",
-          border: "0.5px solid var(--color-kage)",
-          borderRadius: 8,
-          overflow: "hidden",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-        }}
+        className="panel-box"
+        style={{ width: 540 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div

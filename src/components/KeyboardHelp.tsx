@@ -63,25 +63,15 @@ export function KeyboardHelp({ open, onClose }: Props) {
 
   return (
     <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(249,248,246,0.7)",
-        zIndex: 300,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      className="panel-overlay"
+      style={{ alignItems: "center", paddingTop: 0, zIndex: 300 }}
       onClick={onClose}
     >
       <div
+        className="panel-box"
         style={{
-          background: "var(--color-paper)",
-          border: "0.5px solid var(--color-kage)",
-          borderRadius: 8,
           padding: 24,
           width: 500,
-          boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
           maxHeight: "80vh",
           overflowY: "auto",
         }}
@@ -125,12 +115,10 @@ export function KeyboardHelp({ open, onClose }: Props) {
                   {desc}
                 </span>
                 <kbd
+                  className="kbd-hint"
                   style={{
                     fontSize: 11,
-                    color: "var(--text-secondary)",
                     background: "var(--bg-tertiary)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 3,
                     padding: "1px 6px",
                     fontFamily: "monospace",
                   }}

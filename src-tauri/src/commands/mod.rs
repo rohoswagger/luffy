@@ -60,6 +60,31 @@ impl From<Session> for SessionDto {
     }
 }
 
+/// Emit the full session list to the frontend.
+/// Called after any state-mutating command to keep the UI in sync.
+fn emit_updated_sessions(app: &AppHandle, session_mgr: &crate::session::SessionManager) {
+    let sessions: Vec<SessionDto> = session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
+    let _ = app.emit("sessions-updated", sessions);
+}
+
+/// Send a startup command to a session's PTY after a brief delay.
+async fn send_startup_command(
+    pty_mgr: &crate::pty_stream::PtyManager,
+    session_id: &str,
+    startup_command: Option<&str>,
+) {
+    if let Some(cmd) = startup_command {
+        if !cmd.is_empty() {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            let _ = pty_mgr.write_input(session_id, &format!("{}\n", cmd));
+        }
+    }
+}
+
 fn parse_agent_type(s: &str) -> AgentType {
     match s {
         "claude-code" => AgentType::ClaudeCode,
@@ -155,22 +180,8 @@ pub async fn create_session(
         &tmux_name,
     )?;
 
-    if let Some(cmd) = args.startup_command.as_deref() {
-        if !cmd.is_empty() {
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            let _ = state
-                .pty_mgr
-                .write_input(&session_id, &format!("{}\n", cmd));
-        }
-    }
-
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    send_startup_command(&state.pty_mgr, &session_id, args.startup_command.as_deref()).await;
+    emit_updated_sessions(&app, &state.session_mgr);
 
     Ok(dto)
 }
@@ -198,13 +209,7 @@ pub async fn kill_session(
         .kill_session(&session_id)
         .map_err(|e| e.to_string())?;
 
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    emit_updated_sessions(&app, &state.session_mgr);
 
     Ok(())
 }
@@ -268,13 +273,7 @@ pub async fn rename_session(
     if !state.session_mgr.rename_session(&session_id, &new_name) {
         return Err("Session not found".to_string());
     }
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    emit_updated_sessions(&app, &state.session_mgr);
     Ok(())
 }
 
@@ -289,13 +288,7 @@ pub async fn set_session_note(
     if !state.session_mgr.set_session_note(&session_id, &note) {
         return Err("Session not found".to_string());
     }
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    emit_updated_sessions(&app, &state.session_mgr);
     Ok(())
 }
 
@@ -337,22 +330,8 @@ pub async fn fork_session(
         &tmux_name,
     )?;
 
-    if let Some(ref cmd) = startup_command {
-        if !cmd.is_empty() {
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            let _ = state
-                .pty_mgr
-                .write_input(&session_id_new, &format!("{}\n", cmd));
-        }
-    }
-
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    send_startup_command(&state.pty_mgr, &session_id_new, startup_command.as_deref()).await;
+    emit_updated_sessions(&app, &state.session_mgr);
 
     Ok(dto)
 }
@@ -475,13 +454,7 @@ pub async fn mark_session_done(
     state
         .session_mgr
         .update_status(&session_id, crate::session::AgentStatus::Done);
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    emit_updated_sessions(&app, &state.session_mgr);
     Ok(())
 }
 
@@ -536,22 +509,13 @@ pub async fn restart_session(
         &tmux_name,
     )?;
 
-    if let Some(ref cmd) = args.startup_command {
-        if !cmd.is_empty() {
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            let _ = state
-                .pty_mgr
-                .write_input(&session_id_new, &format!("{}\n", cmd));
-        }
-    }
-
-    let sessions: Vec<SessionDto> = state
-        .session_mgr
-        .list_sessions()
-        .into_iter()
-        .map(SessionDto::from)
-        .collect();
-    let _ = app.emit("sessions-updated", sessions);
+    send_startup_command(
+        &state.pty_mgr,
+        &session_id_new,
+        args.startup_command.as_deref(),
+    )
+    .await;
+    emit_updated_sessions(&app, &state.session_mgr);
 
     Ok(dto)
 }

@@ -9,7 +9,7 @@ export function useTauriEvents() {
   useEffect(() => {
     // Request desktop notification permission on app start
     if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
+      Notification.requestPermission().catch(() => {});
     }
 
     invoke<SessionData[]>("restore_sessions")

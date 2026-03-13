@@ -75,27 +75,11 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(249,248,246,0.7)",
-        zIndex: 200,
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: 100,
-      }}
-      onClick={onClose}
-    >
+    <div className="panel-overlay" onClick={onClose}>
       <div
+        className="panel-box"
         style={{
           width: 620,
-          background: "var(--color-paper)",
-          border: "0.5px solid var(--color-kage)",
-          borderRadius: 8,
-          overflow: "hidden",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
           maxHeight: "70vh",
           display: "flex",
           flexDirection: "column",
@@ -118,34 +102,18 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
           </span>
           <input
             ref={inputRef}
+            className="input-ghost"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search output across all sessions…"
-            style={{
-              flex: 1,
-              background: "transparent",
-              border: "none",
-              outline: "none",
-              color: "var(--text-primary)",
-              fontSize: 14,
-              fontFamily: "inherit",
-            }}
           />
           {results.length > 0 && (
             <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
               {results.length} match{results.length !== 1 ? "es" : ""}
             </span>
           )}
-          <span
-            style={{
-              fontSize: 10,
-              color: "var(--text-secondary)",
-              border: "1px solid var(--border)",
-              borderRadius: 3,
-              padding: "2px 5px",
-            }}
-          >
+          <span className="kbd-hint" style={{ padding: "2px 5px" }}>
             ESC
           </span>
         </div>

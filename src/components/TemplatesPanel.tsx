@@ -45,28 +45,10 @@ export function TemplatesPanel({ open, onClose, onLaunch }: Props) {
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(249,248,246,0.7)",
-        zIndex: 200,
-        display: "flex",
-        alignItems: "flex-start",
-        justifyContent: "center",
-        paddingTop: 100,
-      }}
-      onClick={onClose}
-    >
+    <div className="panel-overlay" onClick={onClose}>
       <div
-        style={{
-          width: 520,
-          background: "var(--color-paper)",
-          border: "0.5px solid var(--color-kage)",
-          borderRadius: 8,
-          overflow: "hidden",
-          boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-        }}
+        className="panel-box"
+        style={{ width: 520 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
