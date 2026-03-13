@@ -250,8 +250,15 @@ export default function App() {
         {sessions.length > 1 && (
           <BroadcastBar
             sessionCount={sessions.length}
+            waitingCount={waitingCount}
             onBroadcast={(text) => {
               broadcastInput(text).catch(console.error);
+            }}
+            onBroadcastWaiting={(text) => {
+              const waitingSessions = sessions.filter((s) => s.status === "WAITING");
+              import("@tauri-apps/api/core").then(({ invoke }) => {
+                waitingSessions.forEach((s) => invoke("send_input", { sessionId: s.id, input: text }).catch(console.error));
+              });
             }}
           />
         )}

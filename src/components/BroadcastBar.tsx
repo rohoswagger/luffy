@@ -2,15 +2,23 @@ import { useState } from "react";
 
 interface Props {
   sessionCount: number;
+  waitingCount?: number;
   onBroadcast: (text: string) => void;
+  onBroadcastWaiting?: (text: string) => void;
 }
 
-export function BroadcastBar({ sessionCount, onBroadcast }: Props) {
+export function BroadcastBar({ sessionCount, waitingCount, onBroadcast, onBroadcastWaiting }: Props) {
   const [value, setValue] = useState("");
 
   const submit = () => {
     if (!value.trim()) return;
     onBroadcast(value);
+    setValue("");
+  };
+
+  const submitWaiting = () => {
+    if (!value.trim() || !onBroadcastWaiting) return;
+    onBroadcastWaiting(value);
     setValue("");
   };
 
@@ -54,6 +62,17 @@ export function BroadcastBar({ sessionCount, onBroadcast }: Props) {
           fontFamily: "inherit",
         }}
       />
+
+      {/* Send to WAITING button */}
+      {waitingCount && waitingCount > 0 && onBroadcastWaiting && (
+        <button
+          onClick={submitWaiting}
+          title={`Send to waiting sessions (${waitingCount})`}
+          style={{ background: "#d29922", border: "none", borderRadius: 4, color: "#000", cursor: "pointer", padding: "2px 8px", fontSize: 11, fontWeight: 700 }}
+        >
+          ↵ {waitingCount} WAIT
+        </button>
+      )}
 
       {/* Send button */}
       <button

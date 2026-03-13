@@ -37,4 +37,18 @@ describe("BroadcastBar", () => {
     fireEvent.keyDown(screen.getByPlaceholderText(/broadcast/i), { key: "Enter" });
     expect(onBroadcast).not.toHaveBeenCalled();
   });
+
+  it("shows WAITING button and calls onBroadcastWaiting when waitingCount > 0", () => {
+    const onBroadcastWaiting = vi.fn();
+    render(<BroadcastBar sessionCount={3} waitingCount={2} onBroadcast={vi.fn()} onBroadcastWaiting={onBroadcastWaiting} />);
+    const input = screen.getByPlaceholderText(/broadcast/i);
+    fireEvent.change(input, { target: { value: "y" } });
+    fireEvent.click(screen.getByTitle(/send to waiting/i));
+    expect(onBroadcastWaiting).toHaveBeenCalledWith("y");
+  });
+
+  it("does not show WAITING button when waitingCount is 0 or not provided", () => {
+    render(<BroadcastBar sessionCount={3} onBroadcast={vi.fn()} />);
+    expect(screen.queryByTitle(/send to waiting/i)).toBeNull();
+  });
 });
