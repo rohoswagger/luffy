@@ -70,11 +70,11 @@ export function useTauriEvents() {
     });
 
     return () => {
-      unlisten.then((fn) => fn());
-      unlistenNeeds.then((fn) => fn());
-      unlistenBudget.then((fn) => fn());
-      unlistenStuck.then((fn) => fn());
-      unlistenBatch.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch(() => {});
+      unlistenNeeds.then((fn) => fn()).catch(() => {});
+      unlistenBudget.then((fn) => fn()).catch(() => {});
+      unlistenStuck.then((fn) => fn()).catch(() => {});
+      unlistenBatch.then((fn) => fn()).catch(() => {});
     };
   }, [setSessions]);
 }
