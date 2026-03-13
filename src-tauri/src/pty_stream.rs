@@ -78,12 +78,8 @@ impl PtyManager {
                             entry.push_str(&stripped);
                             if entry.len() > MAX_SEARCH_BUF {
                                 let trim_at = entry.len() - MAX_SEARCH_BUF;
-                                let trim_at = entry
-                                    .char_indices()
-                                    .find(|(i, _)| *i >= trim_at)
-                                    .map(|(i, _)| i)
-                                    .unwrap_or(trim_at);
-                                *entry = entry[trim_at..].to_string();
+                                let trim_at = entry.ceil_char_boundary(trim_at);
+                                entry.drain(..trim_at);
                             }
                         }
                         on_data(chunk);
@@ -292,6 +288,28 @@ mod tests {
         );
         let out = mgr.get_output("s1").unwrap();
         assert!(out.contains("error: something went wrong"));
+    }
+
+    #[test]
+    fn buffer_trim_uses_drain_not_realloc() {
+        let mgr = PtyManager::new();
+        let sid = "trim-test".to_string();
+        // Fill buffer beyond 50KB
+        let big = "x".repeat(MAX_SEARCH_BUF + 1000);
+        mgr.output_buffers.lock().unwrap().insert(sid.clone(), big);
+        // Simulate a chunk append + trim cycle
+        {
+            let mut bufs = mgr.output_buffers.lock().unwrap();
+            let entry = bufs.get_mut(&sid).unwrap();
+            entry.push_str("new-chunk");
+            if entry.len() > MAX_SEARCH_BUF {
+                let trim_at = entry.len() - MAX_SEARCH_BUF;
+                let trim_at = entry.ceil_char_boundary(trim_at);
+                entry.drain(..trim_at);
+            }
+            assert!(entry.len() <= MAX_SEARCH_BUF);
+            assert!(entry.ends_with("new-chunk"));
+        }
     }
 
     #[test]
