@@ -38,53 +38,39 @@ bun run test --run
 cd src-tauri && cargo test
 ```
 
-## Architecture
+## Detailed Context (read these after compaction — saves re-reading source)
+- `src/CLAUDE.md` — full frontend map: components, store, hooks, utils, keyboard shortcuts
+- `src-tauri/src/CLAUDE.md` — full backend map: all modules, commands, background loop, test patterns
+
+## Architecture (summary)
 
 ### Frontend (`src/`)
-- `components/` — UI components, each with a `.test.tsx` file
-- `hooks/useTauri.ts` — All Tauri IPC calls and event listeners
-- `store/sessions.ts` — Zustand store (single source of truth for sessions)
-- `utils/sessions.ts` — Pure utility functions (nextWaiting, sortByPriority, isStuck)
-- `utils/time.ts` — formatRelativeTime utility
+- `App.tsx` — root; owns all state, keyboard shortcuts, session action handlers
+- `store/sessions.ts` — Zustand store (single source of truth)
+- `hooks/useTauri.ts` — all Tauri IPC + event listeners
+- `utils/sessions.ts` — pure utils: sortByPriority, isStuck, nextWaiting
+- `utils/time.ts` — formatDuration, formatRelativeTime
+- `components/` — 15 components each with `.test.tsx`
 
 ### Backend (`src-tauri/src/`)
 - `session/` — Session lifecycle (manager, model, events, health)
-- `status/` — Agent status detection from PTY output
-- `pty_stream.rs` — PTY attach/stream, output buffers (50KB rolling)
-- `cost.rs` — USD cost detection from agent output
-- `templates.rs` — Session template persistence (~/.config/luffy/templates.json)
-- `session_meta.rs` — Session metadata persistence (~/.config/luffy/sessions.json)
-- `git.rs` — Git branch/worktree detection
-- `commands/` — Tauri IPC command handlers
-
-### Key Tauri Commands
-- `create_session`, `kill_session`, `list_sessions`, `send_input`, `broadcast_input`
-- `restore_sessions` — Restore sessions from tmux + metadata on startup
-- `search_output` — Cross-session search in output buffers
-- `get_session_events` — Timeline of status/cost events per session
-- `export_session_output` — Export to ~/Downloads
-- `fork_session` — Clone a session with same config
-- `rename_session` — Rename session display name
-- `resize_pty` — Sync terminal dimensions
-- `list_templates`, `save_template`, `delete_template`
+- `status/detector.rs` — PTY output → AgentStatus (OnceLock regex)
+- `pty_stream.rs` — PTY attach/stream, 50KB ANSI-stripped rolling buffers
+- `cost.rs` — USD cost extraction from PTY output
+- `stuck_detector.rs` — auto-interrupt THINKING sessions stuck 15+ min
+- `auto_respond.rs` — pattern-match WAITING sessions and auto-reply
+- `templates.rs` — session templates (~/.config/luffy/templates.json)
+- `session_meta.rs` — session persistence (~/.config/luffy/sessions.json)
+- `git.rs` — branch/worktree detection and creation
+- `commands/mod.rs` — all Tauri IPC command handlers
 
 ### Key Events (Tauri → Frontend)
-- `sessions-updated` — Any session state change, carries full session list
-- `pty-output-{sessionId}` — Terminal output chunk for specific session
-- `agent-needs-input` — Agent entered WAITING state (triggers desktop notification)
-
-## Background Tasks (Rust)
-Background loop in `lib.rs` runs every 10s:
-- Marks sessions ERROR if tmux session is dead
-- Every 60s: removes DONE/ERROR sessions older than 30 minutes
-
-## Session Status Flow
-```
-Idle → Thinking (spinner detected)
-Thinking → WaitingForInput ([Y/n] or interactive prompt detected)
-Any → Error (Error:/Failed: detected in recent output)
-Any → Done (✓ Done pattern detected)
-```
+- `sessions-updated` — full session list on any state change
+- `pty-output-{sessionId}` — raw terminal output chunk
+- `agent-needs-input` — session entered WAITING (desktop notification)
+- `cost-budget-exceeded` — session exceeded its cost budget
+- `session-stuck` — Ctrl+C sent to stuck THINKING session
+- `batch-done` — all THINKING/WAITING sessions finished
 
 ## Common Patterns
 
@@ -103,3 +89,4 @@ Any → Done (✓ Done pattern detected)
 ## Config Files Location
 - `~/.config/luffy/templates.json` — Session templates
 - `~/.config/luffy/sessions.json` — Session metadata (for persistence)
+- `~/.config/luffy/auto_responses.json` — Auto-respond patterns
