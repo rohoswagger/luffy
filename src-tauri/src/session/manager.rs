@@ -156,6 +156,23 @@ impl SessionManager {
         Ok(restored)
     }
 
+    /// Remove a session from the registry without killing the tmux session.
+    /// Used for cleanup of already-dead or already-finished sessions.
+    pub fn remove_session(&self, session_id: &str) -> bool {
+        self.sessions.lock().unwrap().remove(session_id).is_some()
+    }
+
+    /// Return IDs of DONE/ERROR sessions whose last_activity is older than `max_age`.
+    pub fn stale_terminal_sessions(&self, max_age: chrono::Duration) -> Vec<String> {
+        let cutoff = chrono::Utc::now() - max_age;
+        self.sessions.lock().unwrap()
+            .values()
+            .filter(|s| matches!(s.status, AgentStatus::Done | AgentStatus::Error))
+            .filter(|s| s.last_activity < cutoff)
+            .map(|s| s.id.clone())
+            .collect()
+    }
+
     /// Return (name, agent_type, working_dir) for forking a session.
     pub fn get_fork_args(&self, session_id: &str) -> Option<(String, AgentType, Option<String>)> {
         self.sessions.lock().unwrap().get(session_id).map(|s| {
@@ -224,6 +241,41 @@ mod tests {
             mgr.sessions.lock().unwrap().insert(id, s);
         }
         assert_eq!(mgr.list_sessions().len(), 3);
+    }
+
+    #[test]
+    fn stale_terminal_sessions_returns_ids_past_threshold() {
+        let mgr = SessionManager::new();
+        // Insert old DONE session directly with backdated last_activity
+        let mut old_done = Session::new("old-done", AgentType::Generic);
+        old_done.status = AgentStatus::Done;
+        old_done.last_activity = chrono::Utc::now() - chrono::Duration::hours(2);
+        let id_old = old_done.id.clone();
+        mgr.sessions.lock().unwrap().insert(id_old.clone(), old_done);
+
+        // Insert recent DONE session (just now)
+        let mut recent_done = Session::new("recent-done", AgentType::Generic);
+        recent_done.status = AgentStatus::Done;
+        let id_recent = recent_done.id.clone();
+        mgr.sessions.lock().unwrap().insert(id_recent.clone(), recent_done);
+
+        let stale = mgr.stale_terminal_sessions(chrono::Duration::hours(1));
+        assert_eq!(stale.len(), 1);
+        assert_eq!(stale[0], id_old);
+    }
+
+    #[test]
+    fn stale_terminal_sessions_skips_active_states() {
+        let mgr = SessionManager::new();
+        // Active session with old last_activity should NOT be stale
+        let mut old_thinking = Session::new("old-thinking", AgentType::Generic);
+        old_thinking.status = AgentStatus::Thinking;
+        old_thinking.last_activity = chrono::Utc::now() - chrono::Duration::hours(2);
+        let id = old_thinking.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), old_thinking);
+
+        let stale = mgr.stale_terminal_sessions(chrono::Duration::hours(1));
+        assert!(stale.is_empty());
     }
 
     #[test]

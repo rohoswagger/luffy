@@ -28,12 +28,27 @@ pub fn run() {
             let state = app.state::<AppState>();
             let session_mgr = state.session_mgr.clone();
 
-            // Background health monitor: every 10s, check if tmux sessions are still alive.
+            // Background health monitor: every 10s, check if tmux sessions are still alive
+            // and auto-remove DONE/ERROR sessions older than 30 minutes.
             tauri::async_runtime::spawn(async move {
+                let mut tick = 0u32;
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    tick += 1;
+
                     let dead = session_mgr.mark_dead_sessions(&session::is_tmux_session_alive);
-                    if !dead.is_empty() {
+                    let mut changed = !dead.is_empty();
+
+                    // Every 60s (6 ticks), auto-clean stale DONE/ERROR sessions (>30 min old)
+                    if tick % 6 == 0 {
+                        let stale = session_mgr.stale_terminal_sessions(chrono::Duration::minutes(30));
+                        for id in stale {
+                            let _ = session_mgr.remove_session(&id);
+                            changed = true;
+                        }
+                    }
+
+                    if changed {
                         let sessions: Vec<commands::SessionDto> = session_mgr.list_sessions()
                             .into_iter().map(commands::SessionDto::from).collect();
                         let _ = tauri::Emitter::emit(&app_handle, "sessions-updated", sessions);
