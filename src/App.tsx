@@ -231,6 +231,16 @@ export default function App() {
     onSelectSession: setActiveSession,
     onKill: handleKill,
     onSetLayout: setLayout,
+    onEscape: () => {
+      setShowNewModal(false);
+      setShowPalette(false);
+      setShowSearch(false);
+      setShowHelp(false);
+      setShowTemplates(false);
+      setShowAutoRespond(false);
+      setShowSidebar(false);
+      setShowEventLog(false);
+    },
   });
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);

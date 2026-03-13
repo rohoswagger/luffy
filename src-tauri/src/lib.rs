@@ -56,7 +56,6 @@ pub fn run() {
             let window_menu = SubmenuBuilder::new(app, "Window")
                 .minimize()
                 .item(&PredefinedMenuItem::fullscreen(app, None)?)
-                .close_window()
                 .build()?;
             let menu = MenuBuilder::new(app)
                 .items(&[&app_menu, &edit_menu, &window_menu])

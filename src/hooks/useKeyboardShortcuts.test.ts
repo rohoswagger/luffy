@@ -54,6 +54,14 @@ describe("useKeyboardShortcuts", () => {
     onSelectSession: vi.fn(),
     onKill: vi.fn(),
     onSetLayout: vi.fn(),
+    onEscape: vi.fn(),
+  });
+
+  it("Escape calls onEscape", () => {
+    const opts = defaults();
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey("Escape");
+    expect(opts.onEscape).toHaveBeenCalledOnce();
   });
 
   it("Cmd+N calls onNewSession (instant create)", () => {

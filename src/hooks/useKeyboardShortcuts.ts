@@ -18,49 +18,56 @@ export interface KeyboardShortcutOptions {
   onSelectSession: (id: string) => void;
   onKill: (id: string) => void;
   onSetLayout: (layout: Layout) => void;
+  onEscape: () => void;
 }
 
 export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
+      if (e.key === "Escape") {
+        opts.onEscape();
+        return;
+      }
 
-      if (meta && e.shiftKey && e.key === "n") {
+      const meta = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+
+      if (meta && e.shiftKey && key === "n") {
         e.preventDefault();
         opts.onNewSessionAdvanced();
         return;
       }
-      if (meta && e.key === "n") {
+      if (meta && key === "n") {
         e.preventDefault();
         opts.onNewSession();
         return;
       }
-      if (meta && e.key === "t") {
+      if (meta && key === "t") {
         e.preventDefault();
         opts.onTemplates();
         return;
       }
-      if (meta && e.key === "b") {
+      if (meta && key === "b") {
         e.preventDefault();
         opts.onToggleSidebar();
         return;
       }
-      if (meta && e.shiftKey && e.key === "r") {
+      if (meta && e.shiftKey && key === "r") {
         e.preventDefault();
         opts.onAutoRespond();
         return;
       }
-      if (meta && e.key === "k") {
+      if (meta && key === "k") {
         e.preventDefault();
         opts.onPalette();
         return;
       }
-      if (meta && e.shiftKey && e.key === "f") {
+      if (meta && e.shiftKey && key === "f") {
         e.preventDefault();
         opts.onSearch();
         return;
       }
-      if (meta && e.key === "l") {
+      if (meta && key === "l") {
         e.preventDefault();
         opts.onToggleEventLog();
         return;
@@ -70,7 +77,7 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
         opts.onToggleHelp();
         return;
       }
-      if (meta && e.shiftKey && e.key === "a") {
+      if (meta && e.shiftKey && key === "a") {
         e.preventDefault();
         opts.onJumpNextWaiting();
         return;
@@ -119,7 +126,7 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
         return;
       }
 
-      if (meta && e.key === "w" && opts.activeSessionId) {
+      if (meta && key === "w" && opts.activeSessionId) {
         e.preventDefault();
         opts.onKill(opts.activeSessionId);
         return;
