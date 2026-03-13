@@ -20,8 +20,8 @@ interface Props {
 
 const EVENT_COLORS: Record<string, string> = {
   Created: "var(--text-secondary)",
-  StatusChanged: "#8b7caa",
-  CostUpdated: "#5a8a62",
+  StatusChanged: "var(--status-thinking)",
+  CostUpdated: "var(--status-done)",
 };
 
 function renderKind(kind: EventKind): string {

@@ -490,8 +490,10 @@ export default function App() {
                   display: "flex",
                   alignItems: "center",
                   gap: 2,
-                  overflow: "hidden",
+                  overflowX: "auto",
+                  overflowY: "hidden",
                   flex: 1,
+                  scrollbarWidth: "none",
                 }}
               >
                 {sessions.map((s, i) => (
