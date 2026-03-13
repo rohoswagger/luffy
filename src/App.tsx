@@ -10,6 +10,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { SearchPanel } from "./components/SearchPanel";
 import { EventLog } from "./components/EventLog";
 import { QuickCommands } from "./components/QuickCommands";
+import { KeyboardHelp } from "./components/KeyboardHelp";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
@@ -21,6 +22,7 @@ export default function App() {
   const [showPalette, setShowPalette] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showEventLog, setShowEventLog] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
@@ -64,6 +66,7 @@ export default function App() {
       if (meta && e.key === "k") { e.preventDefault(); setShowPalette(true); return; }
       if (meta && e.shiftKey && e.key === "f") { e.preventDefault(); setShowSearch(true); return; }
       if (meta && e.key === "l") { e.preventDefault(); setShowEventLog((v) => !v); return; }
+      if (meta && e.key === "/") { e.preventDefault(); setShowHelp((v) => !v); return; }
 
       if (meta && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
@@ -198,6 +201,7 @@ export default function App() {
       </div>
 
       <NewSessionModal open={showNewModal} onClose={() => setShowNewModal(false)} onCreate={handleCreate} />
+      <KeyboardHelp open={showHelp} onClose={() => setShowHelp(false)} />
       <CommandPalette
         open={showPalette}
         sessions={sessions}
