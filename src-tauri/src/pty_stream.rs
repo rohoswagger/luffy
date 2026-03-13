@@ -1,9 +1,12 @@
 use anyhow::Result;
 use portable_pty::{native_pty_system, CommandBuilder, PtySize};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::thread;
+use regex::Regex;
+
+const MAX_SEARCH_BUF: usize = 50 * 1024;
 
 pub struct PtyHandle {
     pub writer: Box<dyn Write + Send>,
@@ -13,12 +16,25 @@ pub struct PtyHandle {
 
 pub struct PtyManager {
     handles: Arc<Mutex<HashMap<String, PtyHandle>>>,
+    /// ANSI-stripped rolling output buffers for cross-session search.
+    output_buffers: Arc<Mutex<HashMap<String, String>>>,
+}
+
+/// Strip ANSI/VT escape sequences and carriage returns for plain-text search.
+pub fn strip_ansi(s: &str) -> String {
+    static RE: OnceLock<Regex> = OnceLock::new();
+    let re = RE.get_or_init(|| {
+        // Covers CSI sequences (ESC[...X), OSC sequences (ESC]...BEL/ST), and misc ESC+char
+        Regex::new(r"\x1b(?:\[[0-9;?]*[A-HJKSTfhlmnprsuABCDEFGHfJKSTm]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[()][AB012]|[=>M])|\r").unwrap()
+    });
+    re.replace_all(s, "").to_string()
 }
 
 impl PtyManager {
     pub fn new() -> Self {
         PtyManager {
             handles: Arc::new(Mutex::new(HashMap::new())),
+            output_buffers: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
@@ -42,6 +58,9 @@ impl PtyManager {
         let writer = pair.master.take_writer()?;
         let mut reader = pair.master.try_clone_reader()?;
 
+        let buffers = self.output_buffers.clone();
+        let buf_sid = session_id.clone();
+
         thread::spawn(move || {
             let mut buf = [0u8; 4096];
             loop {
@@ -49,6 +68,22 @@ impl PtyManager {
                     Ok(0) | Err(_) => break,
                     Ok(n) => {
                         let chunk = String::from_utf8_lossy(&buf[..n]).to_string();
+                        let stripped = strip_ansi(&chunk);
+                        {
+                            let mut bufs = buffers.lock().unwrap();
+                            let entry = bufs.entry(buf_sid.clone()).or_default();
+                            entry.push_str(&stripped);
+                            if entry.len() > MAX_SEARCH_BUF {
+                                let trim_at = entry.len() - MAX_SEARCH_BUF;
+                                // Align to char boundary
+                                let trim_at = entry
+                                    .char_indices()
+                                    .find(|(i, _)| *i >= trim_at)
+                                    .map(|(i, _)| i)
+                                    .unwrap_or(trim_at);
+                                *entry = entry[trim_at..].to_string();
+                            }
+                        }
                         on_data(chunk);
                     }
                 }
@@ -71,6 +106,11 @@ impl PtyManager {
         }
     }
 
+    /// Return the ANSI-stripped output buffer for a session.
+    pub fn get_output(&self, session_id: &str) -> Option<String> {
+        self.output_buffers.lock().unwrap().get(session_id).cloned()
+    }
+
     /// Resize a PTY pane.
     pub fn resize(&self, _session_id: &str, _rows: u16, _cols: u16) {
         // v2: implement per-pair resize via portable-pty resize API
@@ -78,6 +118,7 @@ impl PtyManager {
 
     pub fn detach(&self, session_id: &str) {
         self.handles.lock().unwrap().remove(session_id);
+        self.output_buffers.lock().unwrap().remove(session_id);
     }
 }
 
@@ -129,5 +170,68 @@ mod tests {
         assert_eq!(mgr.handles.lock().unwrap().len(), 1);
         mgr.detach("test-id");
         assert_eq!(mgr.handles.lock().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn strip_ansi_removes_color_codes() {
+        let raw = "\x1b[32mHello\x1b[0m World";
+        assert_eq!(strip_ansi(raw), "Hello World");
+    }
+
+    #[test]
+    fn strip_ansi_removes_cursor_movement() {
+        let raw = "\x1b[2J\x1b[HClean screen";
+        assert_eq!(strip_ansi(raw), "Clean screen");
+    }
+
+    #[test]
+    fn strip_ansi_removes_carriage_return() {
+        let raw = "line1\r\nline2";
+        assert_eq!(strip_ansi(raw), "line1\nline2");
+    }
+
+    #[test]
+    fn get_output_returns_none_for_unknown_session() {
+        let mgr = PtyManager::new();
+        assert!(mgr.get_output("unknown").is_none());
+    }
+
+    #[test]
+    fn output_buffer_accumulates_stripped_content() {
+        let mgr = PtyManager::new();
+        mgr.output_buffers.lock().unwrap().insert(
+            "s1".to_string(),
+            "error: something went wrong\n".to_string(),
+        );
+        let out = mgr.get_output("s1").unwrap();
+        assert!(out.contains("error: something went wrong"));
+    }
+
+    #[test]
+    fn detach_also_clears_output_buffer() {
+        struct FakeWriter;
+        impl Write for FakeWriter {
+            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> { Ok(buf.len()) }
+            fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+        }
+        #[derive(Debug)]
+        struct FakeChild2;
+        impl portable_pty::ChildKiller for FakeChild2 {
+            fn kill(&mut self) -> std::io::Result<()> { Ok(()) }
+            fn clone_killer(&self) -> Box<dyn portable_pty::ChildKiller + Send + Sync> { Box::new(FakeChild2) }
+        }
+        impl portable_pty::Child for FakeChild2 {
+            fn try_wait(&mut self) -> std::io::Result<Option<portable_pty::ExitStatus>> { Ok(None) }
+            fn wait(&mut self) -> std::io::Result<portable_pty::ExitStatus> { Ok(portable_pty::ExitStatus::with_exit_code(0)) }
+            fn process_id(&self) -> Option<u32> { None }
+        }
+
+        let mgr = PtyManager::new();
+        mgr.handles.lock().unwrap().insert("sid".to_string(), PtyHandle {
+            writer: Box::new(FakeWriter), _child: Box::new(FakeChild2),
+        });
+        mgr.output_buffers.lock().unwrap().insert("sid".to_string(), "some output".to_string());
+        mgr.detach("sid");
+        assert!(mgr.get_output("sid").is_none());
     }
 }

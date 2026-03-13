@@ -7,6 +7,7 @@ import { BroadcastBar } from "./components/BroadcastBar";
 import { LayoutSwitcher } from "./components/LayoutSwitcher";
 import { NewSessionModal } from "./components/NewSessionModal";
 import { CommandPalette } from "./components/CommandPalette";
+import { SearchPanel } from "./components/SearchPanel";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
@@ -16,6 +17,7 @@ export default function App() {
   const { sessions, activeSessionId, setActiveSession, removeSession } = useSessionStore();
   const [showNewModal, setShowNewModal] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
@@ -57,6 +59,7 @@ export default function App() {
 
       if (meta && e.key === "n") { e.preventDefault(); setShowNewModal(true); return; }
       if (meta && e.key === "k") { e.preventDefault(); setShowPalette(true); return; }
+      if (meta && e.shiftKey && e.key === "f") { e.preventDefault(); setShowSearch(true); return; }
 
       if (meta && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
@@ -173,6 +176,11 @@ export default function App() {
         sessions={sessions}
         onSelect={(id) => { setActiveSession(id); setShowPalette(false); }}
         onClose={() => setShowPalette(false)}
+      />
+      <SearchPanel
+        open={showSearch}
+        onClose={() => setShowSearch(false)}
+        onNavigate={(id) => { setActiveSession(id); setShowSearch(false); }}
       />
     </div>
   );

@@ -11,3 +11,5 @@ make sure you do incremental commits!
 An example use case of this is: i leave you running on a vm overnight, i come back and the app has been churning away all night and has improved significantly!
 
 use bun for all js package management, not npm
+
+simplicity is key!! if you can remove a dependency or simplify logic, that's a win. your goal is to stack wins and build the best product

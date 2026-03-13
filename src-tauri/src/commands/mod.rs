@@ -160,6 +160,43 @@ pub async fn restore_sessions(
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
 
+/// Search ANSI-stripped output buffers across all sessions.
+#[derive(Serialize, Clone)]
+pub struct SearchResult {
+    pub session_id: String,
+    pub session_name: String,
+    pub line_number: usize,
+    pub excerpt: String,
+}
+
+#[tauri::command]
+pub async fn search_output(
+    state: State<'_, AppState>,
+    query: String,
+) -> Result<Vec<SearchResult>, String> {
+    if query.trim().is_empty() {
+        return Ok(vec![]);
+    }
+    let q = query.to_lowercase();
+    let sessions = state.session_mgr.list_sessions();
+    let mut results = vec![];
+    for session in sessions {
+        if let Some(output) = state.pty_mgr.get_output(&session.id) {
+            for (i, line) in output.lines().enumerate() {
+                if line.to_lowercase().contains(&q) {
+                    results.push(SearchResult {
+                        session_id: session.id.clone(),
+                        session_name: session.name.clone(),
+                        line_number: i + 1,
+                        excerpt: line.chars().take(200).collect(),
+                    });
+                }
+            }
+        }
+    }
+    Ok(results)
+}
+
 /// Send the same input to all active sessions simultaneously.
 #[tauri::command]
 pub async fn broadcast_input(
