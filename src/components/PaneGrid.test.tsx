@@ -21,7 +21,7 @@ const makeSession = (id: string, name: string): SessionData => ({
   id, name, tmux_session: `luffy-${id}`, status: "IDLE",
   agent_type: "claude-code", worktree_path: null, branch: null,
   created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0,
-  note: null, last_output_preview: "",
+  note: null, last_output_preview: "", startup_command: null,
 });
 
 describe("PaneGrid", () => {
