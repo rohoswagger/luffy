@@ -5,6 +5,14 @@ use std::collections::HashMap;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
+/// Result of processing a PTY output chunk in a single lock scope.
+pub struct PtyChunkResult {
+    pub status_changed: bool,
+    pub became_waiting: bool,
+    pub budget_exceeded: bool,
+    pub session_name: String,
+}
+
 #[derive(Clone, Default)]
 pub struct SessionManager {
     sessions: Arc<Mutex<HashMap<String, Session>>>,
@@ -362,6 +370,60 @@ impl SessionManager {
             }
         }
         dead
+    }
+
+    /// Process a PTY output chunk: update preview, status, and cost in a single lock.
+    /// Returns None if session not found.
+    pub fn process_pty_chunk(
+        &self,
+        session_id: &str,
+        raw_chunk: &str,
+        detected_cost: Option<f64>,
+    ) -> Option<PtyChunkResult> {
+        let preview = extract_preview(raw_chunk);
+        let new_status = crate::status::detect_status(raw_chunk);
+
+        let mut sessions = self.sessions.lock().unwrap();
+        let s = sessions.get_mut(session_id)?;
+
+        // Update preview
+        if !preview.is_empty() {
+            s.last_output_preview = preview;
+        }
+
+        // Update status
+        let mut status_changed = false;
+        let mut became_waiting = false;
+        if let Some(ref status) = new_status {
+            if s.status != *status {
+                let from = s.status.to_string();
+                let to = status.to_string();
+                s.events.push(SessionEvent::status_changed(&from, &to));
+                became_waiting = matches!(status, AgentStatus::WaitingForInput)
+                    && !matches!(s.status, AgentStatus::WaitingForInput);
+                s.status = status.clone();
+                status_changed = true;
+            }
+            s.last_activity = chrono::Utc::now();
+        }
+
+        // Update cost
+        let mut budget_exceeded = false;
+        if let Some(cost) = detected_cost {
+            if cost > s.total_cost_usd {
+                s.total_cost_usd = cost;
+                s.events.push(SessionEvent::cost_updated(cost));
+                budget_exceeded = s.cost_budget_usd > 0.0 && cost > s.cost_budget_usd;
+            }
+        }
+
+        let session_name = s.name.clone();
+        Some(PtyChunkResult {
+            status_changed,
+            became_waiting,
+            budget_exceeded,
+            session_name,
+        })
     }
 
     /// Update the last output preview for a session (ANSI-stripped last meaningful line).
@@ -724,5 +786,60 @@ mod tests {
         mgr.set_session_note(&id, "some note");
         mgr.set_session_note(&id, "");
         assert!(mgr.get_session(&id).unwrap().note.is_none());
+    }
+
+    #[test]
+    fn process_pty_chunk_updates_preview_and_status() {
+        let mgr = SessionManager::new();
+        let s = Session::new("chunky", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let result = mgr.process_pty_chunk(&id, "⠋ Analyzing files...", None);
+        assert!(result.is_some());
+        let r = result.unwrap();
+        assert!(r.status_changed);
+        assert!(!r.became_waiting);
+        assert!(!r.budget_exceeded);
+        assert_eq!(mgr.get_session(&id).unwrap().status, AgentStatus::Thinking);
+        // Braille spinner is not an ANSI escape, so it stays in preview
+        assert!(mgr
+            .get_session(&id)
+            .unwrap()
+            .last_output_preview
+            .contains("Analyzing files..."));
+    }
+
+    #[test]
+    fn process_pty_chunk_detects_waiting_transition() {
+        let mgr = SessionManager::new();
+        let mut s = Session::new("waiting-test", AgentType::Generic);
+        s.status = AgentStatus::Thinking;
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let result = mgr.process_pty_chunk(&id, "Do you want to run this?", None);
+        let r = result.unwrap();
+        assert!(r.became_waiting);
+        assert_eq!(r.session_name, "waiting-test");
+    }
+
+    #[test]
+    fn process_pty_chunk_detects_budget_exceeded() {
+        let mgr = SessionManager::new();
+        let mut s = Session::new("expensive", AgentType::Generic);
+        s.cost_budget_usd = 1.0;
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let result = mgr.process_pty_chunk(&id, "normal output", Some(2.0));
+        let r = result.unwrap();
+        assert!(r.budget_exceeded);
+    }
+
+    #[test]
+    fn process_pty_chunk_returns_none_for_missing_session() {
+        let mgr = SessionManager::new();
+        assert!(mgr.process_pty_chunk("nope", "output", None).is_none());
     }
 }

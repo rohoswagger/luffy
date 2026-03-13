@@ -80,22 +80,12 @@ fn attach_pty(
 
     pty_mgr
         .attach(session_id, tmux_name, move |chunk| {
-            session_mgr.update_output_preview(&sid, &chunk);
-            if let Some(new_status) = crate::status::detect_status(&chunk) {
-                let prev = session_mgr.get_session(&sid).map(|s| s.status.clone());
-                session_mgr.update_status(&sid, new_status.clone());
-                if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
-                    && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
-                {
-                    let label = session_mgr
-                        .get_session(&sid)
-                        .map(|s| s.name.clone())
-                        .unwrap_or_else(|| sid.clone());
-                    let _ = app_clone.emit("agent-needs-input", label);
+            let detected_cost = crate::cost::detect_cost(&chunk);
+            if let Some(result) = session_mgr.process_pty_chunk(&sid, &chunk, detected_cost) {
+                if result.became_waiting {
+                    let _ = app_clone.emit("agent-needs-input", result.session_name);
                 }
-            }
-            if let Some(cost) = crate::cost::detect_cost(&chunk) {
-                if session_mgr.update_cost(&sid, cost) {
+                if result.budget_exceeded {
                     let _ = app_clone.emit("cost-budget-exceeded", sid.clone());
                 }
             }
