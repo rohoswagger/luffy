@@ -25,6 +25,7 @@ import {
   forkSession,
 } from "./hooks/useTauri";
 import { nextWaitingSessionId } from "./utils/sessions";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 export default function App() {
   useTauriEvents();
@@ -137,100 +138,24 @@ export default function App() {
   );
 
   // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const meta = e.metaKey || e.ctrlKey;
-
-      if (meta && e.key === "n") {
-        e.preventDefault();
-        setShowNewModal(true);
-        return;
-      }
-      if (meta && e.key === "t") {
-        e.preventDefault();
-        setShowTemplates(true);
-        return;
-      }
-      if (meta && e.shiftKey && e.key === "r") {
-        e.preventDefault();
-        setShowAutoRespond(true);
-        return;
-      }
-      if (meta && e.key === "k") {
-        e.preventDefault();
-        setShowPalette(true);
-        return;
-      }
-      if (meta && e.shiftKey && e.key === "f") {
-        e.preventDefault();
-        setShowSearch(true);
-        return;
-      }
-      if (meta && e.key === "l") {
-        e.preventDefault();
-        setShowEventLog((v) => !v);
-        return;
-      }
-      if (meta && e.key === "/") {
-        e.preventDefault();
-        setShowHelp((v) => !v);
-        return;
-      }
-      if (meta && e.shiftKey && e.key === "a") {
-        e.preventDefault();
-        const next = nextWaitingSessionId(sessions, activeSessionId);
-        if (next) setActiveSession(next);
-        return;
-      }
-
-      if (meta && /^[1-9]$/.test(e.key)) {
-        e.preventDefault();
-        const s = sessions[parseInt(e.key, 10) - 1];
-        if (s) setActiveSession(s.id);
-        return;
-      }
-
-      if (meta && e.key === "[") {
-        e.preventDefault();
-        const idx = sessions.findIndex((s) => s.id === activeSessionId);
-        if (idx > 0) setActiveSession(sessions[idx - 1].id);
-        return;
-      }
-
-      if (meta && e.key === "]") {
-        e.preventDefault();
-        const idx = sessions.findIndex((s) => s.id === activeSessionId);
-        if (idx < sessions.length - 1) setActiveSession(sessions[idx + 1].id);
-        return;
-      }
-
-      if (meta && e.key === "w" && activeSessionId) {
-        e.preventDefault();
-        handleKill(activeSessionId);
-        return;
-      }
-
-      // Cmd+Shift+1/2/4: switch layout
-      if (meta && e.shiftKey && e.key === "1") {
-        e.preventDefault();
-        setLayout("1up");
-        return;
-      }
-      if (meta && e.shiftKey && e.key === "2") {
-        e.preventDefault();
-        setLayout("2up");
-        return;
-      }
-      if (meta && e.shiftKey && e.key === "4") {
-        e.preventDefault();
-        setLayout("4up");
-        return;
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [sessions, activeSessionId, setActiveSession, handleKill]);
+  useKeyboardShortcuts({
+    sessions,
+    activeSessionId,
+    onNewSession: () => setShowNewModal(true),
+    onTemplates: () => setShowTemplates(true),
+    onAutoRespond: () => setShowAutoRespond(true),
+    onPalette: () => setShowPalette(true),
+    onSearch: () => setShowSearch(true),
+    onToggleEventLog: () => setShowEventLog((v) => !v),
+    onToggleHelp: () => setShowHelp((v) => !v),
+    onJumpNextWaiting: () => {
+      const next = nextWaitingSessionId(sessions, activeSessionId);
+      if (next) setActiveSession(next);
+    },
+    onSelectSession: setActiveSession,
+    onKill: handleKill,
+    onSetLayout: setLayout,
+  });
 
   return (
     <div
@@ -439,14 +364,12 @@ export default function App() {
                 const waitingSessions = sessions.filter(
                   (s) => s.status === "WAITING",
                 );
-                import("@tauri-apps/api/core").then(({ invoke }) => {
-                  waitingSessions.forEach((s) =>
-                    invoke("send_input", {
-                      sessionId: s.id,
-                      input: text,
-                    }).catch(console.error),
-                  );
-                });
+                waitingSessions.forEach((s) =>
+                  invoke("send_input", {
+                    sessionId: s.id,
+                    input: text,
+                  }).catch(console.error),
+                );
               }}
             />
           )}
