@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { formatRelativeTime } from "../utils/time";
 
@@ -40,18 +40,56 @@ function renderKind(kind: EventKind): string {
 export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
   const [events, setEvents] = useState<SessionEventData[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const lastFetchRef = useRef<number>(0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSessionIdRef = useRef<string>(sessionId);
+
+  const THROTTLE_MS = 10_000;
 
   useEffect(() => {
-    setLoaded(false);
-    invoke<SessionEventData[]>("get_session_events", { sessionId })
-      .then((evs) => {
-        setEvents(evs);
-        setLoaded(true);
-      })
-      .catch((err: unknown) => {
-        console.error("Failed to fetch session events:", err);
-        setLoaded(true);
-      });
+    const sessionChanged = prevSessionIdRef.current !== sessionId;
+    prevSessionIdRef.current = sessionId;
+
+    // Reset throttle when switching sessions so first fetch is immediate
+    if (sessionChanged) {
+      lastFetchRef.current = 0;
+    }
+
+    function doFetch() {
+      lastFetchRef.current = Date.now();
+      invoke<SessionEventData[]>("get_session_events", { sessionId })
+        .then((evs) => {
+          setEvents(evs);
+          setLoaded(true);
+        })
+        .catch((err: unknown) => {
+          console.error("Failed to fetch session events:", err);
+          setLoaded(true);
+        });
+    }
+
+    const elapsed = Date.now() - lastFetchRef.current;
+
+    if (elapsed >= THROTTLE_MS) {
+      setLoaded(false);
+      doFetch();
+    } else {
+      // Schedule a fetch for when the throttle window expires
+      if (timerRef.current === null) {
+        const remaining = THROTTLE_MS - elapsed;
+        timerRef.current = setTimeout(() => {
+          timerRef.current = null;
+          doFetch();
+        }, remaining);
+      }
+    }
+
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
   }, [sessionId, lastActivity]);
 
   return (

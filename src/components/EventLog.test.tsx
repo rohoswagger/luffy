@@ -73,7 +73,7 @@ describe("EventLog", () => {
     );
   });
 
-  it("refetches when lastActivity changes", async () => {
+  it("throttles refetch when lastActivity changes rapidly", async () => {
     mockInvoke.mockResolvedValue([]);
     const { rerender } = render(
       <EventLog
@@ -82,7 +82,10 @@ describe("EventLog", () => {
         lastActivity="2026-03-12T00:00:00Z"
       />,
     );
+    // First fetch fires immediately
     await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(1));
+
+    // Rapid lastActivity changes should NOT cause additional immediate fetches
     rerender(
       <EventLog
         sessionId="s1"
@@ -90,6 +93,14 @@ describe("EventLog", () => {
         lastActivity="2026-03-12T01:00:00Z"
       />,
     );
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledTimes(2));
+    rerender(
+      <EventLog
+        sessionId="s1"
+        sessionName="a"
+        lastActivity="2026-03-12T02:00:00Z"
+      />,
+    );
+    // Still only 1 call — the rest are throttled (deferred via setTimeout)
+    expect(mockInvoke).toHaveBeenCalledTimes(1);
   });
 });

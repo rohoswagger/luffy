@@ -19,25 +19,34 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searched, setSearched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const mountedRef = useRef(true);
 
   useEffect(() => {
     if (open) {
+      mountedRef.current = true;
       setQuery("");
       setResults([]);
       setSearched(false);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
+    return () => {
+      mountedRef.current = false;
+    };
   }, [open]);
 
   const runSearch = useCallback(async (q: string) => {
     if (!q.trim()) {
-      setResults([]);
-      setSearched(false);
+      if (mountedRef.current) {
+        setResults([]);
+        setSearched(false);
+      }
       return;
     }
     const res = await invoke<SearchResult[]>("search_output", { query: q });
-    setResults(res);
-    setSearched(true);
+    if (mountedRef.current) {
+      setResults(res);
+      setSearched(true);
+    }
   }, []);
 
   useEffect(() => {

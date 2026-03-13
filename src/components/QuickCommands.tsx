@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 
 const DEFAULT_COMMANDS = ["y", "n", "continue", "exit"];
 
@@ -12,7 +12,7 @@ interface Props {
   commands?: string[];
 }
 
-export function QuickCommands({ onSend, commands = DEFAULT_COMMANDS }: Props) {
+export const QuickCommands = memo(function QuickCommands({ onSend, commands = DEFAULT_COMMANDS }: Props) {
   const [custom, setCustom] = useState("");
 
   const sendCustom = () => {
@@ -76,4 +76,4 @@ export function QuickCommands({ onSend, commands = DEFAULT_COMMANDS }: Props) {
       />
     </div>
   );
-}
+});

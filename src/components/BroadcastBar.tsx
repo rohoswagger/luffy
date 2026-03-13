@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 
 interface Props {
   sessionCount: number;
@@ -7,7 +7,7 @@ interface Props {
   onBroadcastWaiting?: (text: string) => void;
 }
 
-export function BroadcastBar({
+export const BroadcastBar = memo(function BroadcastBar({
   sessionCount,
   waitingCount,
   onBroadcast,
@@ -154,4 +154,4 @@ export function BroadcastBar({
       </button>
     </div>
   );
-}
+});

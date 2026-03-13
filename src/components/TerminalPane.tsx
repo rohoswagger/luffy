@@ -90,14 +90,19 @@ export function TerminalPane({
       }
     });
 
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
       fitAddon.fit();
-      syncSize();
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        syncSize();
+      }, 100);
     });
     observer.observe(containerRef.current);
 
     return () => {
       isCancelled = true;
+      if (resizeTimer) clearTimeout(resizeTimer);
       observer.disconnect();
       unlistenRef.current?.();
       term.dispose();
