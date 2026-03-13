@@ -137,6 +137,21 @@ export default function App() {
             </span>
           )}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            {activeSession && (
+              <button
+                title="Export session output to ~/Downloads"
+                onClick={() => {
+                  import("@tauri-apps/api/core").then(({ invoke }) => {
+                    invoke<string>("export_session_output", { sessionId: activeSession.id })
+                      .then((path) => alert(`Saved: ${path}`))
+                      .catch((e) => console.error("Export failed:", e));
+                  });
+                }}
+                style={{ background: "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
+              >
+                ↓ export
+              </button>
+            )}
             <button
               title="Toggle event log (Cmd+L)"
               onClick={() => setShowEventLog((v) => !v)}

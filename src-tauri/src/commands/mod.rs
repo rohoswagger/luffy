@@ -168,6 +168,32 @@ pub async fn restore_sessions(
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
 
+/// Export a session's output buffer to a log file in ~/Downloads (or ~).
+/// Returns the full path of the written file.
+#[tauri::command]
+pub async fn export_session_output(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<String, String> {
+    let session = state.session_mgr.get_session(&session_id)
+        .ok_or_else(|| "Session not found".to_string())?;
+
+    let output = state.pty_mgr.get_output(&session_id)
+        .unwrap_or_else(|| format!("# No output captured for session '{}'.\n", session.name));
+
+    let safe_name = session.name.replace(['/', '\\', ':', ' '], "-");
+    let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
+    let filename = format!("luffy-{}-{}.log", safe_name, timestamp);
+
+    let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
+    let downloads = std::path::PathBuf::from(&home).join("Downloads");
+    let dir = if downloads.exists() { downloads } else { std::path::PathBuf::from(&home) };
+    let path = dir.join(&filename);
+
+    std::fs::write(&path, &output).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().to_string())
+}
+
 /// Return the event log for a session.
 #[tauri::command]
 pub async fn get_session_events(

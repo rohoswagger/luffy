@@ -30,6 +30,7 @@ pub fn run() {
             commands::search_output,
             commands::resize_pty,
             commands::get_session_events,
+            commands::export_session_output,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
