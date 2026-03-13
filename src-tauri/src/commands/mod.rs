@@ -2,6 +2,7 @@ use tauri::{AppHandle, Emitter, State};
 use crate::session::{AgentType, Session};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateSessionArgs {
@@ -53,6 +54,37 @@ fn parse_agent_type(s: &str) -> AgentType {
     }
 }
 
+/// Attach PTY to a session, wiring status detection, cost tracking, and event emission.
+fn attach_pty(
+    pty_mgr: &crate::pty_stream::PtyManager,
+    session_mgr: Arc<crate::session::SessionManager>,
+    app: AppHandle,
+    session_id: String,
+    tmux_name: &str,
+) -> Result<(), String> {
+    let sid = session_id.clone();
+    let app_clone = app.clone();
+
+    pty_mgr.attach(session_id, tmux_name, move |chunk| {
+        if let Some(new_status) = crate::status::detect_status(&chunk) {
+            let prev = session_mgr.get_session(&sid).map(|s| s.status.clone());
+            session_mgr.update_status(&sid, new_status.clone());
+            if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
+                && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
+            {
+                let label = session_mgr.get_session(&sid)
+                    .map(|s| s.name.clone())
+                    .unwrap_or_else(|| sid.clone());
+                let _ = app_clone.emit("agent-needs-input", label);
+            }
+        }
+        if let Some(cost) = crate::cost::detect_cost(&chunk) {
+            session_mgr.update_cost(&sid, cost);
+        }
+        let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
+    }).map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 pub async fn create_session(
     app: AppHandle,
@@ -68,28 +100,7 @@ pub async fn create_session(
     let tmux_name = session.tmux_session.clone();
     let dto = SessionDto::from(session);
 
-    let app_clone = app.clone();
-    let sid = session_id.clone();
-    let session_mgr_clone = state.session_mgr.clone();
-
-    state.pty_mgr.attach(session_id.clone(), &tmux_name, move |chunk| {
-        if let Some(new_status) = crate::status::detect_status(&chunk) {
-            let prev = session_mgr_clone.get_session(&sid).map(|s| s.status.clone());
-            session_mgr_clone.update_status(&sid, new_status.clone());
-            if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
-                && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
-            {
-                let label = session_mgr_clone.get_session(&sid)
-                    .map(|s| s.name.clone())
-                    .unwrap_or_else(|| sid.clone());
-                let _ = app_clone.emit("agent-needs-input", label);
-            }
-        }
-        if let Some(cost) = crate::cost::detect_cost(&chunk) {
-            session_mgr_clone.update_cost(&sid, cost);
-        }
-        let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
-    }).map_err(|e| e.to_string())?;
+    attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session_id.clone(), &tmux_name)?;
 
     let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
         .into_iter().map(SessionDto::from).collect();
@@ -139,30 +150,7 @@ pub async fn restore_sessions(
     let sessions = state.session_mgr.restore_from_tmux().map_err(|e| e.to_string())?;
 
     for session in &sessions {
-        let session_id = session.id.clone();
-        let tmux_name = session.tmux_session.clone();
-        let app_clone = app.clone();
-        let sid = session_id.clone();
-        let session_mgr_clone = state.session_mgr.clone();
-
-        let _ = state.pty_mgr.attach(session_id, &tmux_name, move |chunk| {
-            if let Some(new_status) = crate::status::detect_status(&chunk) {
-                let prev = session_mgr_clone.get_session(&sid).map(|s| s.status.clone());
-                session_mgr_clone.update_status(&sid, new_status.clone());
-                if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
-                    && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
-                {
-                    let label = session_mgr_clone.get_session(&sid)
-                        .map(|s| s.name.clone())
-                        .unwrap_or_else(|| sid.clone());
-                    let _ = app_clone.emit("agent-needs-input", label);
-                }
-            }
-            if let Some(cost) = crate::cost::detect_cost(&chunk) {
-                session_mgr_clone.update_cost(&sid, cost);
-            }
-            let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
-        });
+        let _ = attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session.id.clone(), &session.tmux_session);
     }
 
     Ok(sessions.into_iter().map(SessionDto::from).collect())
@@ -187,28 +175,7 @@ pub async fn fork_session(
     let tmux_name = session.tmux_session.clone();
     let dto = SessionDto::from(session);
 
-    let app_clone = app.clone();
-    let sid = session_id_new.clone();
-    let session_mgr_clone = state.session_mgr.clone();
-
-    state.pty_mgr.attach(session_id_new, &tmux_name, move |chunk| {
-        if let Some(new_status) = crate::status::detect_status(&chunk) {
-            let prev = session_mgr_clone.get_session(&sid).map(|s| s.status.clone());
-            session_mgr_clone.update_status(&sid, new_status.clone());
-            if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
-                && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
-            {
-                let label = session_mgr_clone.get_session(&sid)
-                    .map(|s| s.name.clone())
-                    .unwrap_or_else(|| sid.clone());
-                let _ = app_clone.emit("agent-needs-input", label);
-            }
-        }
-        if let Some(cost) = crate::cost::detect_cost(&chunk) {
-            session_mgr_clone.update_cost(&sid, cost);
-        }
-        let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
-    }).map_err(|e| e.to_string())?;
+    attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session_id_new, &tmux_name)?;
 
     let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
         .into_iter().map(SessionDto::from).collect();
