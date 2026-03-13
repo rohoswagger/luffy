@@ -39,7 +39,12 @@ describe("session store", () => {
   });
 
   it("updateSessionStatus mutates only matching session", () => {
-    const s2 = { ...mockSession, id: "2", name: "b", tmux_session: "luffy-def" };
+    const s2 = {
+      ...mockSession,
+      id: "2",
+      name: "b",
+      tmux_session: "luffy-def",
+    };
     act(() => useSessionStore.getState().setSessions([mockSession, s2]));
     act(() => useSessionStore.getState().updateSessionStatus("1", "THINKING"));
     const sessions = useSessionStore.getState().sessions;

@@ -9,7 +9,9 @@ describe("KeyboardHelp", () => {
   });
 
   it("does not render when closed", () => {
-    const { container } = render(<KeyboardHelp open={false} onClose={vi.fn()} />);
+    const { container } = render(
+      <KeyboardHelp open={false} onClose={vi.fn()} />,
+    );
     expect(container.firstChild).toBeNull();
   });
 

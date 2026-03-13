@@ -4,7 +4,10 @@
  * @param isoString - ISO 8601 start timestamp
  * @param now - reference time (injectable for tests)
  */
-export function formatDuration(isoString: string, now: Date = new Date()): string {
+export function formatDuration(
+  isoString: string,
+  now: Date = new Date(),
+): string {
   if (!isoString) return "";
   const then = new Date(isoString);
   if (isNaN(then.getTime())) return "";
@@ -25,7 +28,10 @@ export function formatDuration(isoString: string, now: Date = new Date()): strin
  * @param isoString - ISO 8601 timestamp string (empty string treated as now)
  * @param now - reference time (defaults to current time, injectable for tests)
  */
-export function formatRelativeTime(isoString: string, now: Date = new Date()): string {
+export function formatRelativeTime(
+  isoString: string,
+  now: Date = new Date(),
+): string {
   if (!isoString) return "just now";
   const then = new Date(isoString);
   if (isNaN(then.getTime())) return "just now";

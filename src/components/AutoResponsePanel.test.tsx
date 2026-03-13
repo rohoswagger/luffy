@@ -3,7 +3,9 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AutoResponsePanel } from "./AutoResponsePanel";
 
 const mockInvoke = vi.fn();
-vi.mock("@tauri-apps/api/core", () => ({ invoke: (...args: unknown[]) => mockInvoke(...args) }));
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
 
 const mockPatterns = [
   { id: "p1", pattern: "[y/n]", response: "y", enabled: true },
@@ -14,7 +16,9 @@ describe("AutoResponsePanel", () => {
   beforeEach(() => mockInvoke.mockReset());
 
   it("does not render when closed", () => {
-    const { container } = render(<AutoResponsePanel open={false} onClose={vi.fn()} />);
+    const { container } = render(
+      <AutoResponsePanel open={false} onClose={vi.fn()} />,
+    );
     expect(container.firstChild).toBeNull();
   });
 
@@ -35,29 +39,56 @@ describe("AutoResponsePanel", () => {
   });
 
   it("calls delete_auto_response when delete clicked", async () => {
-    mockInvoke.mockResolvedValueOnce(mockPatterns).mockResolvedValueOnce([mockPatterns[1]]);
+    mockInvoke
+      .mockResolvedValueOnce(mockPatterns)
+      .mockResolvedValueOnce([mockPatterns[1]]);
     render(<AutoResponsePanel open onClose={vi.fn()} />);
     await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
     fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("delete_auto_response", { id: "p1" }));
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("delete_auto_response", {
+        id: "p1",
+      }),
+    );
   });
 
   it("calls add_auto_response when form submitted", async () => {
-    mockInvoke.mockResolvedValueOnce(mockPatterns).mockResolvedValueOnce([...mockPatterns, { id: "p3", pattern: "are you sure", response: "yes", enabled: true }]);
+    mockInvoke
+      .mockResolvedValueOnce(mockPatterns)
+      .mockResolvedValueOnce([
+        ...mockPatterns,
+        { id: "p3", pattern: "are you sure", response: "yes", enabled: true },
+      ]);
     render(<AutoResponsePanel open onClose={vi.fn()} />);
     await waitFor(() => screen.getByPlaceholderText(/pattern/i));
-    fireEvent.change(screen.getByPlaceholderText(/pattern/i), { target: { value: "are you sure" } });
-    fireEvent.change(screen.getByPlaceholderText(/response/i), { target: { value: "yes" } });
+    fireEvent.change(screen.getByPlaceholderText(/pattern/i), {
+      target: { value: "are you sure" },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/response/i), {
+      target: { value: "yes" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /add/i }));
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("add_auto_response", { pattern: "are you sure", response: "yes" }));
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("add_auto_response", {
+        pattern: "are you sure",
+        response: "yes",
+      }),
+    );
   });
 
   it("calls toggle_auto_response when checkbox changed", async () => {
-    mockInvoke.mockResolvedValueOnce(mockPatterns).mockResolvedValueOnce(mockPatterns);
+    mockInvoke
+      .mockResolvedValueOnce(mockPatterns)
+      .mockResolvedValueOnce(mockPatterns);
     render(<AutoResponsePanel open onClose={vi.fn()} />);
     await waitFor(() => screen.getByText("[y/n]"));
     const toggles = screen.getAllByRole("checkbox");
     fireEvent.click(toggles[0]);
-    await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith("toggle_auto_response", { id: "p1", enabled: false }));
+    await waitFor(() =>
+      expect(mockInvoke).toHaveBeenCalledWith("toggle_auto_response", {
+        id: "p1",
+        enabled: false,
+      }),
+    );
   });
 });

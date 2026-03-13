@@ -43,12 +43,14 @@ describe("formatDuration", () => {
   });
 
   it("returns hours and minutes for multi-hour durations", () => {
-    const ts = new Date(now.getTime() - (2 * 60 + 15) * 60 * 1000).toISOString();
+    const ts = new Date(
+      now.getTime() - (2 * 60 + 15) * 60 * 1000,
+    ).toISOString();
     expect(formatDuration(ts, now)).toBe("2h 15m");
   });
 
   it("returns days and hours for multi-day durations", () => {
-    const ts = new Date(now.getTime() - (25 * 60 * 60 * 1000)).toISOString();
+    const ts = new Date(now.getTime() - 25 * 60 * 60 * 1000).toISOString();
     expect(formatDuration(ts, now)).toBe("1d 1h");
   });
 

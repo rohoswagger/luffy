@@ -34,7 +34,7 @@ export const useSessionStore = create<SessionStore>((set) => ({
   setActiveSession: (id) => set({ activeSessionId: id }),
   updateSessionStatus: (id, status) =>
     set((state) => ({
-      sessions: state.sessions.map((s) => s.id === id ? { ...s, status } : s),
+      sessions: state.sessions.map((s) => (s.id === id ? { ...s, status } : s)),
     })),
   addSession: (session) =>
     set((state) => ({ sessions: [...state.sessions, session] })),

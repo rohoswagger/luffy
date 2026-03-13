@@ -3,8 +3,8 @@ import { invoke } from "@tauri-apps/api/core";
 
 const DEFAULT_COMMANDS: Record<string, string> = {
   "claude-code": "claude",
-  "aider": "aider",
-  "generic": "",
+  aider: "aider",
+  generic: "",
 };
 
 interface CreateArgs {
@@ -27,7 +27,9 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   const [agentType, setAgentType] = useState("claude-code");
   const [workingDir, setWorkingDir] = useState("");
   const [count, setCount] = useState(1);
-  const [startupCommand, setStartupCommand] = useState(DEFAULT_COMMANDS["claude-code"]);
+  const [startupCommand, setStartupCommand] = useState(
+    DEFAULT_COMMANDS["claude-code"],
+  );
   const [createWorktree, setCreateWorktree] = useState(false);
   const [costBudget, setCostBudget] = useState(0);
 
@@ -43,10 +45,24 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
     const dir = workingDir.trim() || null;
     if (count > 1) {
       for (let i = 1; i <= count; i++) {
-        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree, cost_budget_usd: costBudget });
+        onCreate({
+          name: `${baseName}-${i}`,
+          agent_type: agentType,
+          working_dir: dir,
+          startup_command: startupCommand,
+          create_worktree: createWorktree,
+          cost_budget_usd: costBudget,
+        });
       }
     } else {
-      onCreate({ name: baseName, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree, cost_budget_usd: costBudget });
+      onCreate({
+        name: baseName,
+        agent_type: agentType,
+        working_dir: dir,
+        startup_command: startupCommand,
+        create_worktree: createWorktree,
+        cost_budget_usd: costBudget,
+      });
     }
     setName("");
     setWorkingDir("");
@@ -54,105 +70,141 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
     setCostBudget(0);
   };
 
-  const overlayStyle: React.CSSProperties = {
-    position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
-    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
-  };
-
-  const modalStyle: React.CSSProperties = {
-    background: "var(--bg-secondary)", border: "1px solid var(--border)",
-    borderRadius: 8, padding: 24, width: 400, display: "flex", flexDirection: "column", gap: 16,
-  };
-
-  const inputStyle: React.CSSProperties = {
-    background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: 4,
-    color: "var(--text-primary)", padding: "8px 12px", fontSize: 13, width: "100%",
-  };
-
-  const labelStyle: React.CSSProperties = {
-    fontSize: 11, color: "var(--text-secondary)", marginBottom: 4,
-    display: "block", textTransform: "uppercase", letterSpacing: "0.05em",
-  };
-
   return (
-    <div style={overlayStyle} onClick={onClose}>
-      <div style={modalStyle} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>New Session</h2>
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div className="overlay" onClick={onClose}>
+      <div
+        className="modal"
+        style={{ width: 420 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="modal-title">New Session</h2>
+        <form
+          onSubmit={handleSubmit}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--sp-4)",
+          }}
+        >
           <div>
-            <label style={labelStyle}>Session Name</label>
-            <input style={inputStyle} placeholder="Session name" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+            <label className="label">Session Name</label>
+            <input
+              className="input"
+              placeholder="Session name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+            />
           </div>
           <div>
-            <label style={labelStyle}>Agent Type</label>
-            <select style={inputStyle} value={agentType} onChange={(e) => setAgentType(e.target.value)}>
-              <option value="claude-code">Claude Code</option>
-              <option value="aider">Aider</option>
-              <option value="generic">Generic</option>
+            <label className="label">Agent Type</label>
+            <select
+              className="input"
+              value={agentType}
+              onChange={(e) => setAgentType(e.target.value)}
+            >
+              <option value="claude-code">◆ Claude Code</option>
+              <option value="aider">⚡ Aider</option>
+              <option value="generic">▸ Generic</option>
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Working Directory (optional)</label>
-            <input style={inputStyle} placeholder="/path/to/project" value={workingDir} onChange={(e) => setWorkingDir(e.target.value)} />
+            <label className="label">Working Directory</label>
+            <input
+              className="input"
+              placeholder="/path/to/project"
+              value={workingDir}
+              onChange={(e) => setWorkingDir(e.target.value)}
+            />
           </div>
           {workingDir && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "var(--sp-2)",
+                cursor: "pointer",
+              }}
+            >
               <input
                 type="checkbox"
-                id="create-worktree"
                 checked={createWorktree}
                 onChange={(e) => setCreateWorktree(e.target.checked)}
-                style={{ cursor: "pointer" }}
+                style={{ cursor: "pointer", accentColor: "var(--blue)" }}
               />
-              <label htmlFor="create-worktree" style={{ ...labelStyle, marginBottom: 0, textTransform: "none", cursor: "pointer", fontSize: 12 }}>
-                Create git worktree + branch for this session
-              </label>
-            </div>
+              <span
+                style={{ fontSize: "var(--text-sm)", color: "var(--text-2)" }}
+              >
+                Create git worktree + branch
+              </span>
+            </label>
           )}
           <div>
-            <label style={labelStyle}>Startup Command (optional)</label>
-            <input style={inputStyle} placeholder="e.g. claude, aider" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} />
-          </div>
-          <div>
-            <label style={labelStyle}>Count (spawn N parallel sessions)</label>
+            <label className="label">Startup Command</label>
             <input
-              type="number"
-              min={1}
-              max={20}
-              style={{ ...inputStyle, width: 80 }}
-              value={count}
-              onChange={(e) => setCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+              className="input"
+              placeholder="e.g. claude, aider"
+              value={startupCommand}
+              onChange={(e) => setStartupCommand(e.target.value)}
             />
           </div>
-          <div>
-            <label style={labelStyle}>Cost Budget USD (0 = no limit)</label>
-            <input
-              type="number"
-              min={0}
-              step={0.01}
-              style={{ ...inputStyle, width: 100 }}
-              value={costBudget || ""}
-              placeholder="0.00"
-              onChange={(e) => setCostBudget(Math.max(0, parseFloat(e.target.value) || 0))}
-            />
+          <div style={{ display: "flex", gap: "var(--sp-4)" }}>
+            <div style={{ flex: 1 }}>
+              <label className="label">Count</label>
+              <input
+                type="number"
+                min={1}
+                max={20}
+                className="input"
+                style={{ width: 80 }}
+                value={count}
+                onChange={(e) =>
+                  setCount(
+                    Math.max(1, Math.min(20, parseInt(e.target.value) || 1)),
+                  )
+                }
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label className="label">Cost Budget (USD)</label>
+              <input
+                type="number"
+                min={0}
+                step={0.01}
+                className="input"
+                style={{ width: 100 }}
+                value={costBudget || ""}
+                placeholder="0.00"
+                onChange={(e) =>
+                  setCostBudget(Math.max(0, parseFloat(e.target.value) || 0))
+                }
+              />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button type="button" onClick={onClose} style={{ ...inputStyle, width: "auto", cursor: "pointer" }}>
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn btn-ghost">
               Cancel
             </button>
             <button
               type="button"
               onClick={() => {
                 const baseName = name.trim() || "session";
-                invoke("save_template", { name: baseName, agentType: agentType, workingDir: workingDir.trim() || null, count, startupCommand: startupCommand || null, costBudgetUsd: costBudget > 0 ? costBudget : null }).catch(console.error);
+                invoke("save_template", {
+                  name: baseName,
+                  agentType,
+                  workingDir: workingDir.trim() || null,
+                  count,
+                  startupCommand: startupCommand || null,
+                  costBudgetUsd: costBudget > 0 ? costBudget : null,
+                }).catch(console.error);
               }}
-              style={{ ...inputStyle, width: "auto", cursor: "pointer" }}
+              className="btn btn-ghost"
               title="Save this config as a reusable template"
             >
               Save template
             </button>
-            <button type="submit" style={{ ...inputStyle, width: "auto", cursor: "pointer", background: "var(--accent-blue)", border: "none", color: "#000", fontWeight: 600 }}>
-              Create
+            <button type="submit" className="btn btn-primary">
+              Create{count > 1 ? ` ×${count}` : ""}
             </button>
           </div>
         </form>

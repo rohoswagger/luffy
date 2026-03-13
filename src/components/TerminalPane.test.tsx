@@ -35,7 +35,7 @@ vi.mock("@tauri-apps/api/core", () => ({
 describe("TerminalPane", () => {
   it("renders the terminal container div", () => {
     const { container } = render(
-      <TerminalPane sessionId="test-id" tmuxSession="luffy-abc" active />
+      <TerminalPane sessionId="test-id" tmuxSession="luffy-abc" active />,
     );
     expect(container.querySelector(".terminal-container")).toBeTruthy();
   });
@@ -48,7 +48,10 @@ describe("TerminalPane", () => {
   it("calls resize_pty after initial fit", async () => {
     render(<TerminalPane sessionId="test-id" tmuxSession="luffy-abc" active />);
     await waitFor(() => {
-      expect(invoke).toHaveBeenCalledWith("resize_pty", expect.objectContaining({ sessionId: "test-id" }));
+      expect(invoke).toHaveBeenCalledWith(
+        "resize_pty",
+        expect.objectContaining({ sessionId: "test-id" }),
+      );
     });
   });
 });
