@@ -1,5 +1,19 @@
 import type { SessionData } from "../store/sessions";
 
+const STUCK_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
+
+/**
+ * A session is "stuck" if it's been THINKING without activity for more than 10 minutes.
+ * WAITING is not stuck — it's waiting for user input (expected state).
+ */
+export function isSessionStuck(session: SessionData, now: Date = new Date()): boolean {
+  if (session.status !== "THINKING") return false;
+  if (!session.last_activity) return false;
+  const lastActivity = new Date(session.last_activity);
+  if (isNaN(lastActivity.getTime())) return false;
+  return now.getTime() - lastActivity.getTime() > STUCK_THRESHOLD_MS;
+}
+
 const STATUS_PRIORITY: Record<SessionData["status"], number> = {
   WAITING: 0,
   THINKING: 1,

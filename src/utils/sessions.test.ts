@@ -1,10 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { nextWaitingSessionId, sortSessionsByPriority } from "./sessions";
+import { nextWaitingSessionId, sortSessionsByPriority, isSessionStuck } from "./sessions";
 import type { SessionData } from "../store/sessions";
 
 const makeSession = (id: string, status: SessionData["status"]): SessionData => ({
   id, name: id, tmux_session: "", status, agent_type: "generic",
   worktree_path: null, branch: null, created_at: "", last_activity: "", total_cost_usd: 0,
+});
+
+describe("isSessionStuck", () => {
+  const now = new Date("2024-01-01T12:00:00Z");
+  const oldActivity = "2024-01-01T11:45:00Z"; // 15 min ago
+
+  it("returns true for THINKING session with activity > 10 min ago", () => {
+    const s = makeSession("a", "THINKING");
+    s.last_activity = oldActivity;
+    expect(isSessionStuck(s, now)).toBe(true);
+  });
+
+  it("returns false for THINKING session with recent activity", () => {
+    const s = makeSession("a", "THINKING");
+    s.last_activity = "2024-01-01T11:55:00Z"; // 5 min ago
+    expect(isSessionStuck(s, now)).toBe(false);
+  });
+
+  it("returns false for WAITING session (waiting is expected, not stuck)", () => {
+    const s = makeSession("a", "WAITING");
+    s.last_activity = oldActivity;
+    expect(isSessionStuck(s, now)).toBe(false);
+  });
+
+  it("returns false for IDLE, ERROR, DONE sessions", () => {
+    for (const status of ["IDLE", "ERROR", "DONE"] as const) {
+      const s = makeSession("a", status);
+      s.last_activity = oldActivity;
+      expect(isSessionStuck(s, now)).toBe(false);
+    }
+  });
 });
 
 describe("sortSessionsByPriority", () => {

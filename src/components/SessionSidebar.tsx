@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
 import { formatRelativeTime } from "../utils/time";
-import { sortSessionsByPriority } from "../utils/sessions";
+import { sortSessionsByPriority, isSessionStuck } from "../utils/sessions";
 
 interface Props {
   sessions: SessionData[];
@@ -169,6 +169,11 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <StatusBadge status={session.status} />
+              {isSessionStuck(session, now) && (
+                <span title="Session may be stuck — no activity for 10+ minutes" style={{ fontSize: 9, color: "#d29922", fontWeight: 700, letterSpacing: "0.05em" }}>
+                  STUCK?
+                </span>
+              )}
               {session.branch && (
                 <span style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {session.branch}
