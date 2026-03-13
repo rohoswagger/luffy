@@ -112,7 +112,10 @@ impl PtyManager {
     }
 
     /// Resize the PTY for a session to match the frontend terminal dimensions.
+    /// Clamps rows/cols to valid ranges (1..=500) to prevent zero-size or absurd PTYs.
     pub fn resize(&self, session_id: &str, rows: u16, cols: u16) {
+        let rows = rows.clamp(1, 500);
+        let cols = cols.clamp(1, 500);
         if let Some(handle) = self.handles.lock().unwrap().get(session_id) {
             let _ = handle.master.resize(PtySize {
                 rows,

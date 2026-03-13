@@ -11,6 +11,10 @@ pub fn detect_cost(output: &str) -> Option<f64> {
     let cost_line = COST_LINE.get_or_init(|| Regex::new(r"(?i)cost").unwrap());
     let dollar = DOLLAR.get_or_init(|| Regex::new(r"\$(\d+(?:\.\d{1,6})?)").unwrap());
 
+    // Cap at $10,000 to prevent false budget-exceeded kills from parsing
+    // unreasonable dollar amounts in output (e.g., "$99999999" in a log message)
+    const MAX_REASONABLE_COST: f64 = 10_000.0;
+
     output
         .lines()
         .filter(|line| cost_line.is_match(line))
@@ -18,6 +22,7 @@ pub fn detect_cost(output: &str) -> Option<f64> {
             dollar
                 .captures_iter(line)
                 .filter_map(|cap| cap[1].parse::<f64>().ok())
+                .filter(|&v| v <= MAX_REASONABLE_COST)
                 .collect::<Vec<_>>()
         })
         .reduce(f64::max)
@@ -64,5 +69,20 @@ mod tests {
     fn ignores_cost_without_dollar_sign() {
         let output = "total cost 5 tokens";
         assert!(detect_cost(output).is_none());
+    }
+
+    #[test]
+    fn ignores_unreasonable_cost_values() {
+        // Values above $10,000 are ignored to prevent false budget kills
+        let output = "Cost: $99999999.99";
+        assert!(detect_cost(output).is_none());
+    }
+
+    #[test]
+    fn reasonable_cost_still_detected() {
+        // Values at the cap boundary still work
+        let output = "Cost: $9999.99";
+        let cost = detect_cost(output).unwrap();
+        assert!((cost - 9999.99).abs() < 1e-6);
     }
 }

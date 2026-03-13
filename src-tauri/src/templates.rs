@@ -58,8 +58,13 @@ pub fn load_templates() -> Result<Vec<SessionTemplate>> {
 
 pub fn save_templates(templates: &[SessionTemplate]) -> Result<()> {
     let path = templates_path();
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
     let data = serde_json::to_string_pretty(templates)?;
-    std::fs::write(path, data)?;
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, data)?;
+    std::fs::rename(&tmp, &path)?;
     Ok(())
 }
 

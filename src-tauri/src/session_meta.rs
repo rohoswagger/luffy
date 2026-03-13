@@ -44,7 +44,10 @@ pub fn save_meta(sessions: &[SessionMeta]) -> Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(&path, serde_json::to_string_pretty(sessions)?)?;
+    // Atomic write: write to temp file then rename to prevent corruption on crash
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, serde_json::to_string_pretty(sessions)?)?;
+    std::fs::rename(&tmp, &path)?;
     Ok(())
 }
 

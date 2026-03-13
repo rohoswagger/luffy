@@ -21,6 +21,21 @@ export function useTauriEvents() {
       });
 
     const unlisten = listen<SessionData[]>("sessions-updated", (event) => {
+      // Detect sessions that just entered ERROR state and notify
+      if (Notification.permission === "granted") {
+        const prev = useSessionStore.getState().sessions;
+        for (const s of event.payload) {
+          if (s.status === "ERROR") {
+            const was = prev.find((p) => p.id === s.id);
+            if (was && was.status !== "ERROR") {
+              new Notification("Session error", {
+                body: `${s.name} has crashed`,
+                silent: false,
+              });
+            }
+          }
+        }
+      }
       setSessions(event.payload);
     });
 
