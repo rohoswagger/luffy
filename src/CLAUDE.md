@@ -94,4 +94,5 @@
 | Cmd+[ / Cmd+]   | Previous / next session                     |
 | Cmd+W           | Kill active session                         |
 | Cmd+D           | Mark active session as done                 |
+| Cmd+E           | Export active session output to ~/Downloads  |
 | Cmd+Shift+1/2/4 | Switch layout 1up/2up/4up                   |
