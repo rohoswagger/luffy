@@ -15,6 +15,7 @@ const SHORTCUTS = [
   { group: "Search & Navigation", items: [
     { keys: "Cmd+K", desc: "Command palette (fuzzy session search)" },
     { keys: "Cmd+Shift+F", desc: "Search output across all sessions" },
+    { keys: "Cmd+Shift+A", desc: "Jump to next WAITING session (needs input)" },
   ]},
   { group: "Layout", items: [
     { keys: "Cmd+Shift+1", desc: "1-pane layout" },

@@ -14,6 +14,7 @@ import { KeyboardHelp } from "./components/KeyboardHelp";
 import { TemplatesPanel } from "./components/TemplatesPanel";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput, forkSession } from "./hooks/useTauri";
+import { nextWaitingSessionId } from "./utils/sessions";
 
 export default function App() {
   useTauriEvents();
@@ -78,6 +79,12 @@ export default function App() {
       if (meta && e.shiftKey && e.key === "f") { e.preventDefault(); setShowSearch(true); return; }
       if (meta && e.key === "l") { e.preventDefault(); setShowEventLog((v) => !v); return; }
       if (meta && e.key === "/") { e.preventDefault(); setShowHelp((v) => !v); return; }
+      if (meta && e.shiftKey && e.key === "a") {
+        e.preventDefault();
+        const next = nextWaitingSessionId(sessions, activeSessionId);
+        if (next) setActiveSession(next);
+        return;
+      }
 
       if (meta && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
