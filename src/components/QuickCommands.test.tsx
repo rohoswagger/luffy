@@ -31,4 +31,16 @@ describe("QuickCommands", () => {
     expect(screen.getByRole("button", { name: "hello" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "world" })).toBeInTheDocument();
   });
+
+  it("renders ^C button always", () => {
+    render(<QuickCommands onSend={vi.fn()} />);
+    expect(screen.getByRole("button", { name: /\^C/i })).toBeInTheDocument();
+  });
+
+  it("sends Ctrl+C raw byte when ^C clicked", () => {
+    const onSend = vi.fn();
+    render(<QuickCommands onSend={onSend} />);
+    fireEvent.click(screen.getByRole("button", { name: /\^C/i }));
+    expect(onSend).toHaveBeenCalledWith("\x03");
+  });
 });
