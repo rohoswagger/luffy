@@ -11,7 +11,7 @@ vi.mock("@xterm/xterm", () => {
   return { Terminal };
 });
 vi.mock("@xterm/addon-fit", () => {
-  class FitAddon { fit = vi.fn(); activate = vi.fn(); }
+  class FitAddon { fit = vi.fn(); activate = vi.fn(); proposeDimensions = vi.fn().mockReturnValue({ rows: 24, cols: 80 }); }
   return { FitAddon };
 });
 vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn().mockResolvedValue(() => {}) }));

@@ -160,6 +160,18 @@ pub async fn restore_sessions(
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
 
+/// Resize a session's PTY to match the frontend terminal dimensions.
+#[tauri::command]
+pub async fn resize_pty(
+    state: State<'_, AppState>,
+    session_id: String,
+    rows: u16,
+    cols: u16,
+) -> Result<(), String> {
+    state.pty_mgr.resize(&session_id, rows, cols);
+    Ok(())
+}
+
 /// Search ANSI-stripped output buffers across all sessions.
 #[derive(Serialize, Clone)]
 pub struct SearchResult {

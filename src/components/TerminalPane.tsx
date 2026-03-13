@@ -44,6 +44,15 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
     term.open(containerRef.current);
     fitAddon.fit();
 
+    // Sync PTY size with frontend terminal after fit
+    const syncSize = () => {
+      const dims = fitAddon.proposeDimensions();
+      if (dims) {
+        invoke("resize_pty", { sessionId, rows: dims.rows, cols: dims.cols }).catch(console.error);
+      }
+    };
+    syncSize();
+
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
@@ -57,7 +66,7 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
       unlistenRef.current = unlisten;
     });
 
-    const observer = new ResizeObserver(() => fitAddon.fit());
+    const observer = new ResizeObserver(() => { fitAddon.fit(); syncSize(); });
     observer.observe(containerRef.current);
 
     return () => {

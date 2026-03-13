@@ -12,6 +12,8 @@ pub struct PtyHandle {
     pub writer: Box<dyn Write + Send>,
     /// Keep child alive — dropping it sends SIGHUP and kills the PTY process.
     pub _child: Box<dyn portable_pty::Child + Send>,
+    /// Keep master alive for PTY resize operations.
+    master: Box<dyn portable_pty::MasterPty + Send>,
 }
 
 pub struct PtyManager {
@@ -24,7 +26,6 @@ pub struct PtyManager {
 pub fn strip_ansi(s: &str) -> String {
     static RE: OnceLock<Regex> = OnceLock::new();
     let re = RE.get_or_init(|| {
-        // Covers CSI sequences (ESC[...X), OSC sequences (ESC]...BEL/ST), and misc ESC+char
         Regex::new(r"\x1b(?:\[[0-9;?]*[A-HJKSTfhlmnprsuABCDEFGHfJKSTm]|\][^\x07\x1b]*(?:\x07|\x1b\\)|[()][AB012]|[=>M])|\r").unwrap()
     });
     re.replace_all(s, "").to_string()
@@ -57,6 +58,7 @@ impl PtyManager {
         let child = pair.slave.spawn_command(cmd)?;
         let writer = pair.master.take_writer()?;
         let mut reader = pair.master.try_clone_reader()?;
+        let master = pair.master;
 
         let buffers = self.output_buffers.clone();
         let buf_sid = session_id.clone();
@@ -75,7 +77,6 @@ impl PtyManager {
                             entry.push_str(&stripped);
                             if entry.len() > MAX_SEARCH_BUF {
                                 let trim_at = entry.len() - MAX_SEARCH_BUF;
-                                // Align to char boundary
                                 let trim_at = entry
                                     .char_indices()
                                     .find(|(i, _)| *i >= trim_at)
@@ -90,7 +91,7 @@ impl PtyManager {
             }
         });
 
-        self.handles.lock().unwrap().insert(session_id, PtyHandle { writer, _child: child });
+        self.handles.lock().unwrap().insert(session_id, PtyHandle { writer, _child: child, master });
         Ok(())
     }
 
@@ -106,14 +107,16 @@ impl PtyManager {
         }
     }
 
+    /// Resize the PTY for a session to match the frontend terminal dimensions.
+    pub fn resize(&self, session_id: &str, rows: u16, cols: u16) {
+        if let Some(handle) = self.handles.lock().unwrap().get(session_id) {
+            let _ = handle.master.resize(PtySize { rows, cols, pixel_width: 0, pixel_height: 0 });
+        }
+    }
+
     /// Return the ANSI-stripped output buffer for a session.
     pub fn get_output(&self, session_id: &str) -> Option<String> {
         self.output_buffers.lock().unwrap().get(session_id).cloned()
-    }
-
-    /// Resize a PTY pane.
-    pub fn resize(&self, _session_id: &str, _rows: u16, _cols: u16) {
-        // v2: implement per-pair resize via portable-pty resize API
     }
 
     pub fn detach(&self, session_id: &str) {
@@ -125,6 +128,56 @@ impl PtyManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::{AtomicBool, Ordering};
+
+    struct FakeWriter;
+    impl Write for FakeWriter {
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> { Ok(buf.len()) }
+        fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+    }
+
+    #[derive(Debug)]
+    struct FakeChild;
+    impl portable_pty::ChildKiller for FakeChild {
+        fn kill(&mut self) -> std::io::Result<()> { Ok(()) }
+        fn clone_killer(&self) -> Box<dyn portable_pty::ChildKiller + Send + Sync> { Box::new(FakeChild) }
+    }
+    impl portable_pty::Child for FakeChild {
+        fn try_wait(&mut self) -> std::io::Result<Option<portable_pty::ExitStatus>> { Ok(None) }
+        fn wait(&mut self) -> std::io::Result<portable_pty::ExitStatus> {
+            Ok(portable_pty::ExitStatus::with_exit_code(0))
+        }
+        fn process_id(&self) -> Option<u32> { None }
+    }
+
+    struct FakeMaster {
+        resized: Arc<AtomicBool>,
+    }
+    impl portable_pty::MasterPty for FakeMaster {
+        fn resize(&self, _size: PtySize) -> anyhow::Result<()> {
+            self.resized.store(true, Ordering::SeqCst);
+            Ok(())
+        }
+        fn get_size(&self) -> anyhow::Result<PtySize> {
+            Ok(PtySize { rows: 24, cols: 80, pixel_width: 0, pixel_height: 0 })
+        }
+        fn take_writer(&self) -> anyhow::Result<Box<dyn Write + Send>> {
+            Ok(Box::new(FakeWriter))
+        }
+        fn try_clone_reader(&self) -> anyhow::Result<Box<dyn Read + Send>> {
+            Ok(Box::new(std::io::Cursor::new(vec![])))
+        }
+        fn process_group_leader(&self) -> Option<i32> { None }
+        fn as_raw_fd(&self) -> Option<i32> { None }
+    }
+
+    fn fake_handle(resized: Arc<AtomicBool>) -> PtyHandle {
+        PtyHandle {
+            writer: Box::new(FakeWriter),
+            _child: Box::new(FakeChild),
+            master: Box::new(FakeMaster { resized }),
+        }
+    }
 
     #[test]
     fn new_pty_manager_has_no_handles() {
@@ -139,34 +192,25 @@ mod tests {
     }
 
     #[test]
-    fn detach_removes_handle() {
-        struct FakeWriter;
-        impl Write for FakeWriter {
-            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> { Ok(buf.len()) }
-            fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
-        }
-
-        #[derive(Debug)]
-        struct FakeChild;
-        impl portable_pty::ChildKiller for FakeChild {
-            fn kill(&mut self) -> std::io::Result<()> { Ok(()) }
-            fn clone_killer(&self) -> Box<dyn portable_pty::ChildKiller + Send + Sync> {
-                Box::new(FakeChild)
-            }
-        }
-        impl portable_pty::Child for FakeChild {
-            fn try_wait(&mut self) -> std::io::Result<Option<portable_pty::ExitStatus>> { Ok(None) }
-            fn wait(&mut self) -> std::io::Result<portable_pty::ExitStatus> {
-                Ok(portable_pty::ExitStatus::with_exit_code(0))
-            }
-            fn process_id(&self) -> Option<u32> { None }
-        }
-
+    fn resize_calls_master_resize() {
+        let flag = Arc::new(AtomicBool::new(false));
         let mgr = PtyManager::new();
-        mgr.handles.lock().unwrap().insert("test-id".to_string(), PtyHandle {
-            writer: Box::new(FakeWriter),
-            _child: Box::new(FakeChild),
-        });
+        mgr.handles.lock().unwrap().insert("sid".to_string(), fake_handle(flag.clone()));
+        mgr.resize("sid", 40, 160);
+        assert!(flag.load(Ordering::SeqCst), "master.resize() was not called");
+    }
+
+    #[test]
+    fn resize_unknown_session_is_noop() {
+        let mgr = PtyManager::new();
+        mgr.resize("ghost", 24, 80); // should not panic
+    }
+
+    #[test]
+    fn detach_removes_handle() {
+        let flag = Arc::new(AtomicBool::new(false));
+        let mgr = PtyManager::new();
+        mgr.handles.lock().unwrap().insert("test-id".to_string(), fake_handle(flag));
         assert_eq!(mgr.handles.lock().unwrap().len(), 1);
         mgr.detach("test-id");
         assert_eq!(mgr.handles.lock().unwrap().len(), 0);
@@ -209,27 +253,9 @@ mod tests {
 
     #[test]
     fn detach_also_clears_output_buffer() {
-        struct FakeWriter;
-        impl Write for FakeWriter {
-            fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> { Ok(buf.len()) }
-            fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
-        }
-        #[derive(Debug)]
-        struct FakeChild2;
-        impl portable_pty::ChildKiller for FakeChild2 {
-            fn kill(&mut self) -> std::io::Result<()> { Ok(()) }
-            fn clone_killer(&self) -> Box<dyn portable_pty::ChildKiller + Send + Sync> { Box::new(FakeChild2) }
-        }
-        impl portable_pty::Child for FakeChild2 {
-            fn try_wait(&mut self) -> std::io::Result<Option<portable_pty::ExitStatus>> { Ok(None) }
-            fn wait(&mut self) -> std::io::Result<portable_pty::ExitStatus> { Ok(portable_pty::ExitStatus::with_exit_code(0)) }
-            fn process_id(&self) -> Option<u32> { None }
-        }
-
+        let flag = Arc::new(AtomicBool::new(false));
         let mgr = PtyManager::new();
-        mgr.handles.lock().unwrap().insert("sid".to_string(), PtyHandle {
-            writer: Box::new(FakeWriter), _child: Box::new(FakeChild2),
-        });
+        mgr.handles.lock().unwrap().insert("sid".to_string(), fake_handle(flag));
         mgr.output_buffers.lock().unwrap().insert("sid".to_string(), "some output".to_string());
         mgr.detach("sid");
         assert!(mgr.get_output("sid").is_none());

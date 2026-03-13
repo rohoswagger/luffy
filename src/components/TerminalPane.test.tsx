@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { TerminalPane } from "./TerminalPane";
+import { invoke } from "@tauri-apps/api/core";
 
 vi.mock("@xterm/xterm", () => {
   class Terminal {
@@ -18,6 +19,7 @@ vi.mock("@xterm/addon-fit", () => {
   class FitAddon {
     fit = vi.fn();
     activate = vi.fn();
+    proposeDimensions = vi.fn().mockReturnValue({ rows: 24, cols: 80 });
   }
   return { FitAddon };
 });
@@ -41,5 +43,12 @@ describe("TerminalPane", () => {
   it("renders empty state when no sessionId", () => {
     render(<TerminalPane sessionId={null} tmuxSession={null} active />);
     expect(screen.getByText(/select a session/i)).toBeInTheDocument();
+  });
+
+  it("calls resize_pty after initial fit", async () => {
+    render(<TerminalPane sessionId="test-id" tmuxSession="luffy-abc" active />);
+    await waitFor(() => {
+      expect(invoke).toHaveBeenCalledWith("resize_pty", expect.objectContaining({ sessionId: "test-id" }));
+    });
   });
 });
