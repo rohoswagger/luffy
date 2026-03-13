@@ -7,6 +7,14 @@ import { sortSessionsByPriority, isSessionStuck } from "../utils/sessions";
 import { AGENT_ICONS as BASE_AGENT_ICONS } from "../constants";
 import logoSrc from "../assets/logo.png";
 
+function costColor(cost: number, budget: number): string {
+  if (budget > 0) {
+    if (cost >= budget) return "var(--red)";
+    if (cost >= budget * 0.8) return "var(--yellow)";
+  }
+  return "var(--green)";
+}
+
 const AGENT_ICONS: Record<string, string> = {
   ...BASE_AGENT_ICONS,
   "claude-code": "◆",
@@ -259,7 +267,6 @@ export function SessionSidebar({
                     title="Mark as done"
                     aria-label="Mark as done"
                     className="btn-icon"
-                    style={{ opacity: 1 }}
                   >
                     ✓
                   </button>
@@ -273,7 +280,7 @@ export function SessionSidebar({
                     title="Restart session"
                     aria-label="Restart session"
                     className="btn-icon"
-                    style={{ opacity: 1, color: "var(--yellow)" }}
+                    style={{ color: "var(--yellow)" }}
                   >
                     ↺
                   </button>
@@ -287,7 +294,6 @@ export function SessionSidebar({
                     title="Fork session"
                     aria-label="Fork session"
                     className="btn-icon"
-                    style={{ opacity: 1 }}
                   >
                     ⊕
                   </button>
@@ -300,7 +306,7 @@ export function SessionSidebar({
                   title="Kill session"
                   aria-label="Kill session"
                   className="btn-icon"
-                  style={{ opacity: 1, color: "var(--text-3)" }}
+                  style={{ color: "var(--text-3)" }}
                 >
                   ✕
                 </button>
@@ -420,15 +426,10 @@ export function SessionSidebar({
                   <span
                     style={{
                       fontSize: "var(--text-xs)",
-                      color:
-                        session.cost_budget_usd > 0
-                          ? session.total_cost_usd >= session.cost_budget_usd
-                            ? "var(--red)"
-                            : session.total_cost_usd >=
-                                session.cost_budget_usd * 0.8
-                              ? "var(--yellow)"
-                              : "var(--green)"
-                          : "var(--green)",
+                      color: costColor(
+                        session.total_cost_usd,
+                        session.cost_budget_usd,
+                      ),
                     }}
                   >
                     ${session.total_cost_usd.toFixed(2)}

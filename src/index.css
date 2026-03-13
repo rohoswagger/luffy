@@ -372,6 +372,10 @@ select.input {
 .session-item:hover .session-actions {
   opacity: 1;
 }
+/* Icon buttons inside session-actions are visible when the container is */
+.session-actions .btn-icon {
+  opacity: 1;
+}
 
 /* ─────────────────────────────────────────
    TOAST — Shibui
