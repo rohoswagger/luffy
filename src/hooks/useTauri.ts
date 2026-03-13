@@ -38,7 +38,7 @@ export function useTauriEvents() {
   }, [setSessions]);
 }
 
-export async function createSession(args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string }) {
+export async function createSession(args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string; create_worktree?: boolean }) {
   return invoke<SessionData>("create_session", { args });
 }
 

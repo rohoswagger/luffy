@@ -12,6 +12,7 @@ interface CreateArgs {
   agent_type: string;
   working_dir: string | null;
   startup_command: string;
+  create_worktree: boolean;
 }
 
 interface Props {
@@ -26,6 +27,7 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   const [workingDir, setWorkingDir] = useState("");
   const [count, setCount] = useState(1);
   const [startupCommand, setStartupCommand] = useState(DEFAULT_COMMANDS["claude-code"]);
+  const [createWorktree, setCreateWorktree] = useState(false);
 
   useEffect(() => {
     setStartupCommand(DEFAULT_COMMANDS[agentType] ?? "");
@@ -39,10 +41,10 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
     const dir = workingDir.trim() || null;
     if (count > 1) {
       for (let i = 1; i <= count; i++) {
-        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir, startup_command: startupCommand });
+        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree });
       }
     } else {
-      onCreate({ name: baseName, agent_type: agentType, working_dir: dir, startup_command: startupCommand });
+      onCreate({ name: baseName, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree });
     }
     setName("");
     setWorkingDir("");
@@ -90,6 +92,20 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
             <label style={labelStyle}>Working Directory (optional)</label>
             <input style={inputStyle} placeholder="/path/to/project" value={workingDir} onChange={(e) => setWorkingDir(e.target.value)} />
           </div>
+          {workingDir && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                type="checkbox"
+                id="create-worktree"
+                checked={createWorktree}
+                onChange={(e) => setCreateWorktree(e.target.checked)}
+                style={{ cursor: "pointer" }}
+              />
+              <label htmlFor="create-worktree" style={{ ...labelStyle, marginBottom: 0, textTransform: "none", cursor: "pointer", fontSize: 12 }}>
+                Create git worktree + branch for this session
+              </label>
+            </div>
+          )}
           <div>
             <label style={labelStyle}>Startup Command (optional)</label>
             <input style={inputStyle} placeholder="e.g. claude, aider" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} />

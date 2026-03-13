@@ -10,6 +10,8 @@ pub struct CreateSessionArgs {
     pub agent_type: String,
     pub working_dir: Option<String>,
     pub startup_command: Option<String>,
+    #[serde(default)]
+    pub create_worktree: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -98,8 +100,26 @@ pub async fn create_session(
     args: CreateSessionArgs,
 ) -> Result<SessionDto, String> {
     let agent_type = parse_agent_type(&args.agent_type);
+
+    // Optionally create a git worktree for the session
+    let effective_working_dir: Option<String> = if args.create_worktree {
+        if let Some(ref base_dir) = args.working_dir {
+            match crate::git::create_worktree(base_dir, &args.name) {
+                Ok(wt_path) => Some(wt_path),
+                Err(e) => {
+                    eprintln!("Warning: could not create worktree: {}", e);
+                    args.working_dir.clone()
+                }
+            }
+        } else {
+            None
+        }
+    } else {
+        args.working_dir.clone()
+    };
+
     let session = state.session_mgr
-        .create_session(&args.name, agent_type, args.working_dir.as_deref())
+        .create_session(&args.name, agent_type, effective_working_dir.as_deref())
         .map_err(|e| e.to_string())?;
 
     let session_id = session.id.clone();
