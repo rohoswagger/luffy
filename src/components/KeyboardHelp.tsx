@@ -9,7 +9,8 @@ const SHORTCUTS = [
   {
     group: "Sessions",
     items: [
-      { keys: "Cmd+N", desc: "New session" },
+      { keys: "Cmd+N", desc: "New session (instant)" },
+      { keys: "Cmd+Shift+N", desc: "New session (advanced options)" },
       { keys: "Cmd+W", desc: "Kill active session" },
       { keys: "Cmd+1–9", desc: "Switch to session by index" },
       { keys: "Cmd+[ / ]", desc: "Cycle sessions" },
@@ -29,6 +30,7 @@ const SHORTCUTS = [
   {
     group: "Layout",
     items: [
+      { keys: "Cmd+B", desc: "Toggle sidebar" },
       { keys: "Cmd+Shift+1", desc: "1-pane layout" },
       { keys: "Cmd+Shift+2", desc: "2-pane layout" },
       { keys: "Cmd+Shift+4", desc: "4-pane layout" },

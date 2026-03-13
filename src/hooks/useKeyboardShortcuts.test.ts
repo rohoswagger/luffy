@@ -42,10 +42,12 @@ describe("useKeyboardShortcuts", () => {
     ],
     activeSessionId: "s1" as string | null,
     onNewSession: vi.fn(),
+    onNewSessionAdvanced: vi.fn(),
     onTemplates: vi.fn(),
     onAutoRespond: vi.fn(),
     onPalette: vi.fn(),
     onSearch: vi.fn(),
+    onToggleSidebar: vi.fn(),
     onToggleEventLog: vi.fn(),
     onToggleHelp: vi.fn(),
     onJumpNextWaiting: vi.fn(),
@@ -54,11 +56,26 @@ describe("useKeyboardShortcuts", () => {
     onSetLayout: vi.fn(),
   });
 
-  it("Cmd+N calls onNewSession", () => {
+  it("Cmd+N calls onNewSession (instant create)", () => {
     const opts = defaults();
     renderHook(() => useKeyboardShortcuts(opts));
     fireKey("n", { metaKey: true });
     expect(opts.onNewSession).toHaveBeenCalledOnce();
+  });
+
+  it("Cmd+Shift+N calls onNewSessionAdvanced", () => {
+    const opts = defaults();
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey("n", { metaKey: true, shiftKey: true });
+    expect(opts.onNewSessionAdvanced).toHaveBeenCalledOnce();
+    expect(opts.onNewSession).not.toHaveBeenCalled();
+  });
+
+  it("Cmd+B calls onToggleSidebar", () => {
+    const opts = defaults();
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey("b", { metaKey: true });
+    expect(opts.onToggleSidebar).toHaveBeenCalledOnce();
   });
 
   it("Cmd+K calls onPalette", () => {

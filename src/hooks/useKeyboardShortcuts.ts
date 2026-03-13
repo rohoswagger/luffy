@@ -6,10 +6,12 @@ export interface KeyboardShortcutOptions {
   sessions: SessionData[];
   activeSessionId: string | null;
   onNewSession: () => void;
+  onNewSessionAdvanced: () => void;
   onTemplates: () => void;
   onAutoRespond: () => void;
   onPalette: () => void;
   onSearch: () => void;
+  onToggleSidebar: () => void;
   onToggleEventLog: () => void;
   onToggleHelp: () => void;
   onJumpNextWaiting: () => void;
@@ -23,6 +25,11 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
     const handler = (e: KeyboardEvent) => {
       const meta = e.metaKey || e.ctrlKey;
 
+      if (meta && e.shiftKey && e.key === "n") {
+        e.preventDefault();
+        opts.onNewSessionAdvanced();
+        return;
+      }
       if (meta && e.key === "n") {
         e.preventDefault();
         opts.onNewSession();
@@ -31,6 +38,11 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
       if (meta && e.key === "t") {
         e.preventDefault();
         opts.onTemplates();
+        return;
+      }
+      if (meta && e.key === "b") {
+        e.preventDefault();
+        opts.onToggleSidebar();
         return;
       }
       if (meta && e.shiftKey && e.key === "r") {

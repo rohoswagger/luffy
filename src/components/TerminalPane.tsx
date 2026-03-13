@@ -79,10 +79,15 @@ export function TerminalPane({
       invoke("send_input", { sessionId, input: data }).catch(console.error);
     });
 
+    let isCancelled = false;
     listen<string>(`pty-output-${sessionId}`, (event) => {
       term.write(event.payload);
     }).then((unlisten) => {
-      unlistenRef.current = unlisten;
+      if (isCancelled) {
+        unlisten();
+      } else {
+        unlistenRef.current = unlisten;
+      }
     });
 
     const observer = new ResizeObserver(() => {
@@ -92,6 +97,7 @@ export function TerminalPane({
     observer.observe(containerRef.current);
 
     return () => {
+      isCancelled = true;
       observer.disconnect();
       unlistenRef.current?.();
       term.dispose();

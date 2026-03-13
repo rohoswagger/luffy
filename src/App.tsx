@@ -1,20 +1,51 @@
-import { useState, useEffect, useCallback } from "react";
+import {
+  lazy,
+  Suspense,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { TerminalPane } from "./components/TerminalPane";
 import { PaneGrid } from "./components/PaneGrid";
 import type { Layout } from "./components/PaneGrid";
 import { BroadcastBar } from "./components/BroadcastBar";
-import { LayoutSwitcher } from "./components/LayoutSwitcher";
-import { NewSessionModal } from "./components/NewSessionModal";
-import { CommandPalette } from "./components/CommandPalette";
-import { SearchPanel } from "./components/SearchPanel";
 import { EventLog } from "./components/EventLog";
 import { QuickCommands } from "./components/QuickCommands";
-import { KeyboardHelp } from "./components/KeyboardHelp";
-import { TemplatesPanel } from "./components/TemplatesPanel";
-import { AutoResponsePanel } from "./components/AutoResponsePanel";
 import { Toast } from "./components/Toast";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+
+const NewSessionModal = lazy(() =>
+  import("./components/NewSessionModal").then((m) => ({
+    default: m.NewSessionModal,
+  })),
+);
+const CommandPalette = lazy(() =>
+  import("./components/CommandPalette").then((m) => ({
+    default: m.CommandPalette,
+  })),
+);
+const SearchPanel = lazy(() =>
+  import("./components/SearchPanel").then((m) => ({
+    default: m.SearchPanel,
+  })),
+);
+const KeyboardHelp = lazy(() =>
+  import("./components/KeyboardHelp").then((m) => ({
+    default: m.KeyboardHelp,
+  })),
+);
+const TemplatesPanel = lazy(() =>
+  import("./components/TemplatesPanel").then((m) => ({
+    default: m.TemplatesPanel,
+  })),
+);
+const AutoResponsePanel = lazy(() =>
+  import("./components/AutoResponsePanel").then((m) => ({
+    default: m.AutoResponsePanel,
+  })),
+);
 import { useSessionStore } from "./store/sessions";
 import { invoke } from "@tauri-apps/api/core";
 import {
@@ -26,6 +57,8 @@ import {
 } from "./hooks/useTauri";
 import { nextWaitingSessionId } from "./utils/sessions";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { StatusBadge } from "./components/StatusBadge";
+import { formatDuration } from "./utils/time";
 
 export default function App() {
   useTauriEvents();
@@ -39,11 +72,20 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showAutoRespond, setShowAutoRespond] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
   const [toast, setToast] = useState<string | null>(null);
+  const [now, setNow] = useState(new Date());
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
   const waitingCount = sessions.filter((s) => s.status === "WAITING").length;
+
+  // Clock for status bar durations
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   // Auto-select: pick first session if none selected, or if active session was removed
   useEffect(() => {
@@ -54,6 +96,37 @@ export default function App() {
       setActiveSession(null);
     }
   }, [sessions, activeSessionId, setActiveSession]);
+
+  // Close sidebar when clicking outside
+  useEffect(() => {
+    if (!showSidebar) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        sidebarRef.current &&
+        !sidebarRef.current.contains(e.target as Node)
+      ) {
+        setShowSidebar(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showSidebar]);
+
+  // Instant session creation — no modal, just a terminal
+  const handleQuickCreate = useCallback(async () => {
+    const name = `agent-${sessions.length + 1}`;
+    try {
+      const session = await createSession({
+        name,
+        agent_type: "claude-code",
+        working_dir: null,
+        startup_command: "claude",
+      });
+      setActiveSession(session.id);
+    } catch (err) {
+      console.error("Failed to create session:", err);
+    }
+  }, [sessions, setActiveSession]);
 
   const handleCreate = useCallback(
     async (args: {
@@ -141,11 +214,13 @@ export default function App() {
   useKeyboardShortcuts({
     sessions,
     activeSessionId,
-    onNewSession: () => setShowNewModal(true),
+    onNewSession: handleQuickCreate,
+    onNewSessionAdvanced: () => setShowNewModal(true),
     onTemplates: () => setShowTemplates(true),
     onAutoRespond: () => setShowAutoRespond(true),
     onPalette: () => setShowPalette(true),
     onSearch: () => setShowSearch(true),
+    onToggleSidebar: () => setShowSidebar((v) => !v),
     onToggleEventLog: () => setShowEventLog((v) => !v),
     onToggleHelp: () => setShowHelp((v) => !v),
     onJumpNextWaiting: () => {
@@ -157,6 +232,8 @@ export default function App() {
     onSetLayout: setLayout,
   });
 
+  const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
+
   return (
     <div
       style={{
@@ -164,19 +241,48 @@ export default function App() {
         height: "100vh",
         width: "100vw",
         overflow: "hidden",
+        position: "relative",
       }}
     >
-      <SessionSidebar
-        sessions={sessions}
-        activeId={activeSessionId}
-        onSelect={setActiveSession}
-        onNewSession={() => setShowNewModal(true)}
-        onKill={handleKill}
-        onFork={handleFork}
-        onMarkDone={handleMarkDone}
-        onRestart={handleRestart}
-        onClearDone={handleClearDone}
-      />
+      {/* Sidebar overlay — triggered by Cmd+B */}
+      {showSidebar && (
+        <>
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.08)",
+              zIndex: 90,
+            }}
+          />
+          <div
+            ref={sidebarRef}
+            style={{
+              position: "fixed",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              zIndex: 91,
+              animation: "sidebar-in 150ms ease-out",
+            }}
+          >
+            <SessionSidebar
+              sessions={sessions}
+              activeId={activeSessionId}
+              onSelect={(id) => {
+                setActiveSession(id);
+                setShowSidebar(false);
+              }}
+              onNewSession={handleQuickCreate}
+              onKill={handleKill}
+              onFork={handleFork}
+              onMarkDone={handleMarkDone}
+              onRestart={handleRestart}
+              onClearDone={handleClearDone}
+            />
+          </div>
+        </>
+      )}
 
       <ErrorBoundary>
         <div
@@ -188,117 +294,7 @@ export default function App() {
             background: "var(--bg-primary)",
           }}
         >
-          {/* Toolbar */}
-          <div
-            style={{
-              height: 36,
-              background: "var(--bg-secondary)",
-              borderBottom: "1px solid var(--border)",
-              display: "flex",
-              alignItems: "center",
-              padding: "0 12px",
-              gap: 10,
-              fontSize: 12,
-              color: "var(--text-secondary)",
-              flexShrink: 0,
-            }}
-          >
-            {layout === "1up" && activeSession && (
-              <>
-                <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>
-                  {activeSession.name}
-                </span>
-                {activeSession.branch && <span>⎇ {activeSession.branch}</span>}
-                {activeSession.worktree_path && (
-                  <span style={{ fontSize: 11 }}>
-                    {activeSession.worktree_path}
-                  </span>
-                )}
-              </>
-            )}
-            {layout !== "1up" && (
-              <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
-                {sessions.length} session{sessions.length !== 1 ? "s" : ""}
-              </span>
-            )}
-            <div
-              style={{
-                marginLeft: "auto",
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-              }}
-            >
-              {waitingCount > 0 && (
-                <button
-                  title={`${waitingCount} session${waitingCount > 1 ? "s" : ""} waiting — Cmd+Shift+A`}
-                  onClick={() => {
-                    const next = nextWaitingSessionId(
-                      sessions,
-                      activeSessionId,
-                    );
-                    if (next) setActiveSession(next);
-                  }}
-                  className="btn btn-toolbar"
-                  style={{
-                    background: "var(--yellow)",
-                    borderColor: "var(--yellow)",
-                    color: "var(--color-paper)",
-                    fontWeight: 700,
-                  }}
-                >
-                  {waitingCount} waiting
-                </button>
-              )}
-              {activeSession && (
-                <button
-                  title="Export session output to ~/Downloads"
-                  onClick={() => {
-                    invoke<string>("export_session_output", {
-                      sessionId: activeSession.id,
-                    })
-                      .then((path) => setToast(`Saved: ${path}`))
-                      .catch((e) => console.error("Export failed:", e));
-                  }}
-                  className="btn btn-ghost btn-toolbar"
-                >
-                  ↓ export
-                </button>
-              )}
-              <button
-                title="Session templates (Cmd+T)"
-                onClick={() => setShowTemplates(true)}
-                className="btn btn-ghost btn-toolbar"
-              >
-                ⬡ templates
-              </button>
-              <button
-                title="Auto-respond patterns (Cmd+Shift+R)"
-                onClick={() => setShowAutoRespond(true)}
-                className="btn btn-ghost btn-toolbar"
-              >
-                ⚡ auto
-              </button>
-              <button
-                title="Toggle event log (Cmd+L)"
-                onClick={() => setShowEventLog((v) => !v)}
-                className="btn btn-ghost btn-toolbar"
-                style={
-                  showEventLog
-                    ? {
-                        background: "var(--bg-4)",
-                        borderColor: "var(--border-strong)",
-                      }
-                    : undefined
-                }
-              >
-                ☰ log
-              </button>
-              <LayoutSwitcher current={layout} onChange={setLayout} />
-            </div>
-          </div>
-
-          {/* Pane area + optional event log side panel */}
+          {/* Terminal fills entire window */}
           <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
             {layout === "1up" ? (
               sessions.length > 0 ? (
@@ -311,7 +307,52 @@ export default function App() {
                   />
                 ))
               ) : (
-                <TerminalPane sessionId={null} tmuxSession={null} active />
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "var(--color-paper)",
+                    color: "var(--color-ishi)",
+                    gap: 12,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "var(--text-lg)",
+                      color: "var(--color-sumi)",
+                      fontWeight: 500,
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    LUFFY
+                  </span>
+                  <span style={{ fontSize: "var(--text-sm)" }}>
+                    Press{" "}
+                    <kbd
+                      style={{
+                        padding: "1px 5px",
+                        border: "0.5px solid var(--color-kage)",
+                        borderRadius: "var(--r-sm)",
+                        fontSize: "var(--text-xs)",
+                        background: "var(--color-paper-warm)",
+                      }}
+                    >
+                      ⌘N
+                    </kbd>{" "}
+                    to start a session
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "var(--text-xs)",
+                      color: "var(--color-kumo)",
+                    }}
+                  >
+                    ⌘⇧N advanced · ⌘T templates · ⌘K palette · ⌘/ help
+                  </span>
+                </div>
               )
             ) : (
               <PaneGrid
@@ -373,56 +414,214 @@ export default function App() {
               }}
             />
           )}
+
+          {/* Minimal bottom status bar */}
+          {sessions.length > 0 && (
+            <div
+              style={{
+                height: 28,
+                background: "var(--color-paper-warm)",
+                borderTop: "0.5px solid var(--color-kage)",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 12px",
+                gap: 12,
+                fontSize: "var(--text-xs)",
+                color: "var(--color-ishi)",
+                flexShrink: 0,
+                letterSpacing: "0.02em",
+              }}
+            >
+              {/* Session tabs */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  overflow: "hidden",
+                  flex: 1,
+                }}
+              >
+                {sessions.map((s, i) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setActiveSession(s.id)}
+                    title={`${s.name} — ⌘${i + 1}`}
+                    style={{
+                      padding: "2px 8px",
+                      border: "none",
+                      background:
+                        s.id === activeSessionId
+                          ? "var(--color-kage)"
+                          : "transparent",
+                      borderRadius: "var(--r-sm)",
+                      color:
+                        s.id === activeSessionId
+                          ? "var(--color-sumi)"
+                          : "var(--color-ishi)",
+                      fontSize: "var(--text-xs)",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      fontFamily: "var(--font-sans)",
+                      letterSpacing: "0.02em",
+                    }}
+                  >
+                    <StatusBadge status={s.status} />
+                    <span
+                      style={{
+                        maxWidth: 100,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {s.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Active session info */}
+              {activeSession && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexShrink: 0,
+                  }}
+                >
+                  {activeSession.branch && (
+                    <span style={{ color: "var(--color-kumo)" }}>
+                      ⎇ {activeSession.branch}
+                    </span>
+                  )}
+                  {activeSession.total_cost_usd > 0 && (
+                    <span style={{ color: "var(--status-done)" }}>
+                      ${activeSession.total_cost_usd.toFixed(2)}
+                    </span>
+                  )}
+                  {["THINKING", "WAITING"].includes(activeSession.status) &&
+                    activeSession.created_at && (
+                      <span style={{ color: "var(--color-kumo)" }}>
+                        {formatDuration(activeSession.created_at, now)}
+                      </span>
+                    )}
+                </div>
+              )}
+
+              {/* Right side: aggregate info + sidebar toggle */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  flexShrink: 0,
+                }}
+              >
+                {waitingCount > 0 && (
+                  <button
+                    onClick={() => {
+                      const next = nextWaitingSessionId(
+                        sessions,
+                        activeSessionId,
+                      );
+                      if (next) setActiveSession(next);
+                    }}
+                    style={{
+                      padding: "1px 6px",
+                      border: "none",
+                      background: "var(--status-waiting)",
+                      borderRadius: "var(--r-sm)",
+                      color: "var(--color-paper)",
+                      fontSize: "var(--text-xs)",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      fontFamily: "var(--font-sans)",
+                    }}
+                    title="Jump to next waiting session (⌘⇧A)"
+                  >
+                    {waitingCount} waiting
+                  </button>
+                )}
+                {totalCost > 0 && (
+                  <span style={{ color: "var(--status-done)" }}>
+                    ${totalCost.toFixed(2)}
+                  </span>
+                )}
+                <button
+                  onClick={() => setShowSidebar((v) => !v)}
+                  title="Toggle sidebar (⌘B)"
+                  style={{
+                    padding: "1px 5px",
+                    border: "none",
+                    background: "transparent",
+                    color: "var(--color-ishi)",
+                    cursor: "pointer",
+                    fontSize: "var(--text-sm)",
+                    borderRadius: "var(--r-sm)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  ☰
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </ErrorBoundary>
 
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
-      <NewSessionModal
-        open={showNewModal}
-        onClose={() => setShowNewModal(false)}
-        onCreate={handleCreate}
-      />
-      <KeyboardHelp open={showHelp} onClose={() => setShowHelp(false)} />
-      <AutoResponsePanel
-        open={showAutoRespond}
-        onClose={() => setShowAutoRespond(false)}
-      />
-      <TemplatesPanel
-        open={showTemplates}
-        onClose={() => setShowTemplates(false)}
-        onLaunch={(t) => {
-          const base = t.name;
-          const dir = t.working_dir;
-          for (let i = 1; i <= t.count; i++) {
-            const name = t.count > 1 ? `${base}-${i}` : base;
-            handleCreate({
-              name,
-              agent_type: t.agent_type,
-              working_dir: dir,
-              startup_command: t.startup_command ?? undefined,
-              cost_budget_usd:
-                t.cost_budget_usd > 0 ? t.cost_budget_usd : undefined,
-            });
-          }
-        }}
-      />
-      <CommandPalette
-        open={showPalette}
-        sessions={sessions}
-        onSelect={(id) => {
-          setActiveSession(id);
-          setShowPalette(false);
-        }}
-        onClose={() => setShowPalette(false)}
-      />
-      <SearchPanel
-        open={showSearch}
-        onClose={() => setShowSearch(false)}
-        onNavigate={(id) => {
-          setActiveSession(id);
-          setShowSearch(false);
-        }}
-      />
+      <Suspense fallback={null}>
+        <NewSessionModal
+          open={showNewModal}
+          onClose={() => setShowNewModal(false)}
+          onCreate={handleCreate}
+        />
+        <KeyboardHelp open={showHelp} onClose={() => setShowHelp(false)} />
+        <AutoResponsePanel
+          open={showAutoRespond}
+          onClose={() => setShowAutoRespond(false)}
+        />
+        <TemplatesPanel
+          open={showTemplates}
+          onClose={() => setShowTemplates(false)}
+          onLaunch={(t) => {
+            const base = t.name;
+            const dir = t.working_dir;
+            for (let i = 1; i <= t.count; i++) {
+              const name = t.count > 1 ? `${base}-${i}` : base;
+              handleCreate({
+                name,
+                agent_type: t.agent_type,
+                working_dir: dir,
+                startup_command: t.startup_command ?? undefined,
+                cost_budget_usd:
+                  t.cost_budget_usd > 0 ? t.cost_budget_usd : undefined,
+              });
+            }
+          }}
+        />
+        <CommandPalette
+          open={showPalette}
+          sessions={sessions}
+          onSelect={(id) => {
+            setActiveSession(id);
+            setShowPalette(false);
+          }}
+          onClose={() => setShowPalette(false)}
+        />
+        <SearchPanel
+          open={showSearch}
+          onClose={() => setShowSearch(false)}
+          onNavigate={(id) => {
+            setActiveSession(id);
+            setShowSearch(false);
+          }}
+        />
+      </Suspense>
     </div>
   );
 }
