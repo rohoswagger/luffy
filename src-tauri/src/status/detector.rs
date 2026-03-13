@@ -4,17 +4,18 @@ use regex::Regex;
 /// Detects agent status from recent terminal output.
 /// Returns Some(status) when a pattern is matched, None for normal output.
 pub fn detect_status(recent_output: &str) -> Option<AgentStatus> {
-    if is_thinking(recent_output) {
-        return Some(AgentStatus::Thinking);
-    }
-    if is_waiting_for_input(recent_output) {
-        return Some(AgentStatus::WaitingForInput);
+    // Terminal states checked first — they override transient indicators
+    if is_done(recent_output) {
+        return Some(AgentStatus::Done);
     }
     if is_error(recent_output) {
         return Some(AgentStatus::Error);
     }
-    if is_done(recent_output) {
-        return Some(AgentStatus::Done);
+    if is_waiting_for_input(recent_output) {
+        return Some(AgentStatus::WaitingForInput);
+    }
+    if is_thinking(recent_output) {
+        return Some(AgentStatus::Thinking);
     }
     None
 }
@@ -223,5 +224,26 @@ mod tests {
     fn detects_done_aborted() {
         let output = "Task Aborted";
         assert_eq!(detect_status(output), Some(AgentStatus::Done));
+    }
+
+    #[test]
+    fn done_takes_priority_over_thinking() {
+        // If output contains both a spinner and a done marker, done should win
+        let output = "⠋ Processing...\n✓ Done";
+        assert_eq!(detect_status(output), Some(AgentStatus::Done));
+    }
+
+    #[test]
+    fn error_takes_priority_over_thinking() {
+        // If output contains both a spinner and an error, error should win
+        let output = "⠋ Analyzing...\nError: compilation failed";
+        assert_eq!(detect_status(output), Some(AgentStatus::Error));
+    }
+
+    #[test]
+    fn waiting_takes_priority_over_thinking() {
+        // If output contains both a spinner and a prompt, waiting should win
+        let output = "⠋ Working...\nDo you want to run this command?";
+        assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
     }
 }
