@@ -379,6 +379,7 @@ pub async fn save_template(
     working_dir: Option<String>,
     count: u32,
     startup_command: Option<String>,
+    cost_budget_usd: Option<f64>,
 ) -> Result<Vec<crate::templates::SessionTemplate>, String> {
     let t = crate::templates::SessionTemplate::new(
         &name,
@@ -386,6 +387,7 @@ pub async fn save_template(
         working_dir,
         count,
         startup_command,
+        cost_budget_usd.unwrap_or(0.0),
     );
     crate::templates::add_template(t).map_err(|e| e.to_string())
 }

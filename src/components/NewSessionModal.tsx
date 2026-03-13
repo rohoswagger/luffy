@@ -144,7 +144,7 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
               type="button"
               onClick={() => {
                 const baseName = name.trim() || "session";
-                invoke("save_template", { name: baseName, agentType: agentType, workingDir: workingDir.trim() || null, count, startupCommand: startupCommand || null }).catch(console.error);
+                invoke("save_template", { name: baseName, agentType: agentType, workingDir: workingDir.trim() || null, count, startupCommand: startupCommand || null, costBudgetUsd: costBudget > 0 ? costBudget : null }).catch(console.error);
               }}
               style={{ ...inputStyle, width: "auto", cursor: "pointer" }}
               title="Save this config as a reusable template"

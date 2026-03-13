@@ -8,6 +8,7 @@ interface Template {
   working_dir: string | null;
   count: number;
   startup_command: string | null;
+  cost_budget_usd: number;
 }
 
 interface Props {
@@ -63,6 +64,7 @@ export function TemplatesPanel({ open, onClose, onLaunch }: Props) {
                   <div style={{ fontSize: 10, color: "var(--text-secondary)", marginTop: 2 }}>
                     {t.agent_type} · {t.count > 1 ? `${t.count} sessions` : "1 session"}
                     {t.working_dir && ` · ${t.working_dir}`}
+                    {t.cost_budget_usd > 0 && ` · $${t.cost_budget_usd.toFixed(2)} budget`}
                   </div>
                 </div>
                 <button

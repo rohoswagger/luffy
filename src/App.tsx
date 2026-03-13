@@ -302,7 +302,7 @@ export default function App() {
           const dir = t.working_dir;
           for (let i = 1; i <= t.count; i++) {
             const name = t.count > 1 ? `${base}-${i}` : base;
-            handleCreate({ name, agent_type: t.agent_type, working_dir: dir, startup_command: t.startup_command ?? undefined });
+            handleCreate({ name, agent_type: t.agent_type, working_dir: dir, startup_command: t.startup_command ?? undefined, cost_budget_usd: t.cost_budget_usd > 0 ? t.cost_budget_usd : undefined });
           }
         }}
       />

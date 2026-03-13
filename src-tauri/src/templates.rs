@@ -11,6 +11,8 @@ pub struct SessionTemplate {
     pub count: u32,
     #[serde(default)]
     pub startup_command: Option<String>,
+    #[serde(default)]
+    pub cost_budget_usd: f64,
 }
 
 impl SessionTemplate {
@@ -20,6 +22,7 @@ impl SessionTemplate {
         working_dir: Option<String>,
         count: u32,
         startup_command: Option<String>,
+        cost_budget_usd: f64,
     ) -> Self {
         SessionTemplate {
             id: uuid::Uuid::new_v4().to_string(),
@@ -28,6 +31,7 @@ impl SessionTemplate {
             working_dir,
             count: count.max(1),
             startup_command,
+            cost_budget_usd,
         }
     }
 }
@@ -89,7 +93,14 @@ mod tests {
 
     #[test]
     fn new_template_has_valid_id() {
-        let t = SessionTemplate::new("worker", "claude-code", Some("/repo".to_string()), 3, None);
+        let t = SessionTemplate::new(
+            "worker",
+            "claude-code",
+            Some("/repo".to_string()),
+            3,
+            None,
+            0.0,
+        );
         assert!(!t.id.is_empty());
         assert_eq!(t.name, "worker");
         assert_eq!(t.count, 3);
@@ -97,8 +108,15 @@ mod tests {
 
     #[test]
     fn count_clamped_to_min_1() {
-        let t = SessionTemplate::new("w", "generic", None, 0, None);
+        let t = SessionTemplate::new("w", "generic", None, 0, None, 0.0);
         assert_eq!(t.count, 1);
+    }
+
+    #[test]
+    fn template_preserves_cost_budget() {
+        let t = SessionTemplate::new("w", "claude-code", None, 1, Some("claude".to_string()), 5.0);
+        assert_eq!(t.cost_budget_usd, 5.0);
+        assert_eq!(t.startup_command.as_deref(), Some("claude"));
     }
 
     #[test]
@@ -112,7 +130,7 @@ mod tests {
     #[test]
     fn add_and_load_template_roundtrips() {
         with_temp_home(|| {
-            let t = SessionTemplate::new("my-worker", "aider", None, 2, None);
+            let t = SessionTemplate::new("my-worker", "aider", None, 2, None, 0.0);
             let saved = add_template(t.clone()).unwrap();
             assert_eq!(saved.len(), 1);
             assert_eq!(saved[0].name, "my-worker");
@@ -126,8 +144,8 @@ mod tests {
     #[test]
     fn delete_template_removes_by_id() {
         with_temp_home(|| {
-            let t1 = SessionTemplate::new("a", "claude-code", None, 1, None);
-            let t2 = SessionTemplate::new("b", "aider", None, 1, None);
+            let t1 = SessionTemplate::new("a", "claude-code", None, 1, None, 0.0);
+            let t2 = SessionTemplate::new("b", "aider", None, 1, None, 0.0);
             add_template(t1.clone()).unwrap();
             add_template(t2).unwrap();
             let after = delete_template(&t1.id).unwrap();
