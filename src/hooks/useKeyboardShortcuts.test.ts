@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useKeyboardShortcuts } from "./useKeyboardShortcuts";
 import type { SessionData } from "../store/sessions";
@@ -40,7 +40,7 @@ describe("useKeyboardShortcuts", () => {
       makeSession({ id: "s2", name: "second" }),
       makeSession({ id: "s3", name: "third" }),
     ],
-    activeSessionId: "s1",
+    activeSessionId: "s1" as string | null,
     onNewSession: vi.fn(),
     onTemplates: vi.fn(),
     onAutoRespond: vi.fn(),
