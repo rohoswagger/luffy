@@ -82,7 +82,7 @@ All Tauri commands. Key patterns:
 `list_templates`, `save_template`, `delete_template`,
 `list_auto_responses`, `add_auto_response`, `delete_auto_response`, `toggle_auto_response`,
 `export_session_output`, `get_session_events`, `mark_session_done`, `restart_session`,
-`resize_pty`, `search_output`
+`resize_pty`, `get_pty_output`, `search_output`
 
 ## Test Patterns
 - Rust: `cd src-tauri && cargo test` — 99 tests
