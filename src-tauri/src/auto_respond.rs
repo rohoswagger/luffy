@@ -125,16 +125,16 @@ fn default_patterns() -> Vec<AutoResponse> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Mutex;
-
-    static LOCK: Mutex<()> = Mutex::new(());
 
     fn with_temp_home(f: impl FnOnce()) {
-        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = crate::TEST_HOME_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let dir = tempfile::tempdir().unwrap();
+        let orig = std::env::var("HOME").unwrap_or_default();
         std::env::set_var("HOME", dir.path());
         f();
-        std::env::remove_var("HOME");
+        std::env::set_var("HOME", orig);
     }
 
     #[test]

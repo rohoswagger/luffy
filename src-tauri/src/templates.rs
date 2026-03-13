@@ -79,11 +79,10 @@ mod tests {
     use std::env;
     use std::sync::Mutex;
 
-    // Serialise env mutations to prevent race conditions in parallel test execution.
-    static LOCK: Mutex<()> = Mutex::new(());
-
     fn with_temp_home<F: FnOnce()>(f: F) {
-        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
+        let _guard = crate::TEST_HOME_LOCK
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let tmp = tempfile::tempdir().unwrap();
         let orig = env::var("HOME").unwrap_or_default();
         env::set_var("HOME", tmp.path());

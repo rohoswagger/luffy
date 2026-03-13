@@ -9,6 +9,11 @@ pub mod status;
 pub mod stuck_detector;
 pub mod templates;
 
+/// Process-wide mutex for tests that mutate the HOME env var.
+/// Shared across all test modules to prevent race conditions.
+#[cfg(test)]
+pub(crate) static TEST_HOME_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 use pty_stream::PtyManager;
 use session::SessionManager;
 use std::sync::Arc;
