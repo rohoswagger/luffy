@@ -73,6 +73,24 @@ describe("NewSessionModal", () => {
     );
   });
 
+  it("resets form fields when reopened after cancel", () => {
+    const { rerender } = render(
+      <NewSessionModal open onClose={vi.fn()} onCreate={vi.fn()} />,
+    );
+    // Fill in a name
+    fireEvent.change(screen.getByPlaceholderText(/session name/i), {
+      target: { value: "my-feature" },
+    });
+    // Close the modal
+    rerender(
+      <NewSessionModal open={false} onClose={vi.fn()} onCreate={vi.fn()} />,
+    );
+    // Reopen the modal
+    rerender(<NewSessionModal open onClose={vi.fn()} onCreate={vi.fn()} />);
+    // Name should be reset
+    expect(screen.getByPlaceholderText(/session name/i)).toHaveValue("");
+  });
+
   it("calls onCreate N times with indexed names when count > 1", () => {
     const onCreate = vi.fn();
     render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);

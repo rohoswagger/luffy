@@ -37,6 +37,19 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
     setStartupCommand(DEFAULT_COMMANDS[agentType] ?? "");
   }, [agentType]);
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (open) {
+      setName("");
+      setAgentType("claude-code");
+      setWorkingDir("");
+      setCount(1);
+      setStartupCommand(DEFAULT_COMMANDS["claude-code"]);
+      setCreateWorktree(false);
+      setCostBudget(0);
+    }
+  }, [open]);
+
   if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -17,8 +17,8 @@ pub(crate) static TEST_HOME_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new((
 use pty_stream::PtyManager;
 use session::SessionManager;
 use std::sync::Arc;
+use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem, SubmenuBuilder};
 use tauri::Manager;
-use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder, PredefinedMenuItem};
 
 pub struct AppState {
     pub session_mgr: Arc<SessionManager>,
@@ -176,8 +176,8 @@ pub fn run() {
                             let check_text = pty_mgr
                                 .get_output(&s.id)
                                 .map(|o| {
-                                    let bytes = o.as_bytes();
-                                    let start = bytes.len().saturating_sub(500);
+                                    let target = o.len().saturating_sub(500);
+                                    let start = o.ceil_char_boundary(target);
                                     o[start..].to_string()
                                 })
                                 .unwrap_or_else(|| s.last_output_preview.clone());
@@ -207,8 +207,8 @@ pub fn run() {
                         let current_output = pty_mgr
                             .get_output(&s.id)
                             .map(|o| {
-                                let bytes = o.as_bytes();
-                                let start = bytes.len().saturating_sub(200);
+                                let target = o.len().saturating_sub(200);
+                                let start = o.ceil_char_boundary(target);
                                 o[start..].to_string()
                             })
                             .unwrap_or_default();
