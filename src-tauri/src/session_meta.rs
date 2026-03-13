@@ -16,6 +16,8 @@ pub struct SessionMeta {
     pub cost_budget_usd: f64,
     #[serde(default)]
     pub startup_command: Option<String>,
+    #[serde(default)]
+    pub created_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
 fn meta_path() -> PathBuf {
@@ -54,11 +56,48 @@ mod tests {
     static LOCK: Mutex<()> = Mutex::new(());
 
     fn with_temp_home(f: impl FnOnce()) {
-        let _guard = LOCK.lock().unwrap();
+        let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = tempfile::tempdir().unwrap();
+        let orig = std::env::var("HOME").unwrap_or_default();
         std::env::set_var("HOME", dir.path());
         f();
-        std::env::remove_var("HOME");
+        std::env::set_var("HOME", orig);
+    }
+
+    #[test]
+    fn created_at_roundtrips() {
+        with_temp_home(|| {
+            let ts = chrono::DateTime::parse_from_rfc3339("2026-03-12T10:00:00Z")
+                .unwrap()
+                .with_timezone(&chrono::Utc);
+            let meta = vec![SessionMeta {
+                tmux_session: "luffy-x".to_string(),
+                name: "x".to_string(),
+                agent_type: "generic".to_string(),
+                working_dir: None,
+                note: None,
+                cost_budget_usd: 0.0,
+                startup_command: None,
+                created_at: Some(ts),
+            }];
+            save_meta(&meta).unwrap();
+            let loaded = load_meta();
+            assert_eq!(loaded[0].created_at, Some(ts));
+        });
+    }
+
+    #[test]
+    fn created_at_defaults_to_none_for_old_files() {
+        with_temp_home(|| {
+            // Write a meta without created_at (simulating an old sessions.json)
+            let json = r#"[{"tmux_session":"luffy-y","name":"y","agent_type":"generic"}]"#;
+            let path = std::env::var("HOME").unwrap();
+            let dir = std::path::PathBuf::from(path).join(".config").join("luffy");
+            std::fs::create_dir_all(&dir).unwrap();
+            std::fs::write(dir.join("sessions.json"), json).unwrap();
+            let loaded = load_meta();
+            assert_eq!(loaded[0].created_at, None);
+        });
     }
 
     #[test]
@@ -79,6 +118,7 @@ mod tests {
                 note: None,
                 cost_budget_usd: 0.0,
                 startup_command: None,
+                created_at: None,
             }];
             save_meta(&meta).unwrap();
             let loaded = load_meta();
@@ -100,6 +140,7 @@ mod tests {
                 note: None,
                 cost_budget_usd: 0.0,
                 startup_command: None,
+                created_at: None,
             }];
             save_meta(&m1).unwrap();
             let m2 = vec![
@@ -111,6 +152,7 @@ mod tests {
                     note: None,
                     cost_budget_usd: 0.0,
                     startup_command: None,
+                    created_at: None,
                 },
                 SessionMeta {
                     tmux_session: "t2".into(),
@@ -120,6 +162,7 @@ mod tests {
                     note: None,
                     cost_budget_usd: 0.0,
                     startup_command: None,
+                    created_at: None,
                 },
             ];
             save_meta(&m2).unwrap();

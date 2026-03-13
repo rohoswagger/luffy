@@ -74,6 +74,7 @@ impl SessionManager {
                 note: s.note.clone(),
                 cost_budget_usd: s.cost_budget_usd,
                 startup_command: s.startup_command.clone(),
+                created_at: Some(s.created_at),
             })
             .collect();
         let _ = crate::session_meta::save_meta(&sessions);
@@ -204,6 +205,9 @@ impl SessionManager {
                 let note = meta.and_then(|m| m.note.clone());
                 let cost_budget_usd = meta.map(|m| m.cost_budget_usd).unwrap_or(0.0);
                 let startup_command = meta.and_then(|m| m.startup_command.clone());
+                let created_at = meta
+                    .and_then(|m| m.created_at)
+                    .unwrap_or_else(chrono::Utc::now);
                 let (branch, worktree) = working_dir
                     .as_deref()
                     .map(crate::git::detect_git_info)
@@ -213,7 +217,7 @@ impl SessionManager {
                     id: uuid::Uuid::new_v4().to_string(),
                     name: display_name.to_string(),
                     tmux_session: name.to_string(),
-                    created_at: chrono::Utc::now(),
+                    created_at,
                     status: AgentStatus::Idle,
                     last_activity: chrono::Utc::now(),
                     worktree_path: worktree,
