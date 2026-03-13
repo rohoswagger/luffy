@@ -42,10 +42,18 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
       }
       return;
     }
-    const res = await invoke<SearchResult[]>("search_output", { query: q });
-    if (mountedRef.current) {
-      setResults(res);
-      setSearched(true);
+    try {
+      const res = await invoke<SearchResult[]>("search_output", { query: q });
+      if (mountedRef.current) {
+        setResults(res);
+        setSearched(true);
+      }
+    } catch (err) {
+      console.error("Search failed:", err);
+      if (mountedRef.current) {
+        setResults([]);
+        setSearched(true);
+      }
     }
   }, []);
 

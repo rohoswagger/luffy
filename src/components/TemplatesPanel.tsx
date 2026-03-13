@@ -34,10 +34,14 @@ export function TemplatesPanel({ open, onClose, onLaunch }: Props) {
   if (!open) return null;
 
   const handleDelete = async (id: string) => {
-    const updated = await invoke<Template[]>("delete_template", {
-      templateId: id,
-    });
-    setTemplates(updated);
+    try {
+      const updated = await invoke<Template[]>("delete_template", {
+        templateId: id,
+      });
+      setTemplates(updated);
+    } catch (err) {
+      console.error("Failed to delete template:", err);
+    }
   };
 
   return (

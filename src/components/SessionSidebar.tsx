@@ -81,7 +81,8 @@ export function SessionSidebar({
     ? sessions.filter(
         (s) =>
           s.name.toLowerCase().includes(filter.toLowerCase()) ||
-          (s.branch && s.branch.toLowerCase().includes(filter.toLowerCase())),
+          (s.branch && s.branch.toLowerCase().includes(filter.toLowerCase())) ||
+          (s.note && s.note.toLowerCase().includes(filter.toLowerCase())),
       )
     : sessions;
   const sortedSessions = sortSessionsByPriority(filteredSessions);

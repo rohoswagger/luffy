@@ -67,6 +67,19 @@ describe("TemplatesPanel", () => {
     await waitFor(() => screen.getByText(/no templates/i));
   });
 
+  it("handles delete_template rejection gracefully", async () => {
+    mockInvoke
+      .mockResolvedValueOnce(mockTemplates)
+      .mockRejectedValueOnce(new Error("backend error"));
+    render(<TemplatesPanel open onClose={vi.fn()} onLaunch={vi.fn()} />);
+    await waitFor(() => screen.getAllByRole("button", { name: /delete/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /delete/i })[0]);
+    // Should not crash — templates remain displayed
+    await waitFor(() =>
+      expect(screen.getByText("auth-worker")).toBeInTheDocument(),
+    );
+  });
+
   it("does not render when closed", () => {
     const { container } = render(
       <TemplatesPanel open={false} onClose={vi.fn()} onLaunch={vi.fn()} />,

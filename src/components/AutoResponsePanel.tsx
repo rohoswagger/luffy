@@ -47,18 +47,26 @@ export function AutoResponsePanel({ open, onClose }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    const updated = await invoke<AutoResponse[]>("delete_auto_response", {
-      id,
-    });
-    setPatterns(updated);
+    try {
+      const updated = await invoke<AutoResponse[]>("delete_auto_response", {
+        id,
+      });
+      setPatterns(updated);
+    } catch (err) {
+      console.error("Failed to delete auto-response:", err);
+    }
   };
 
   const handleToggle = async (id: string, enabled: boolean) => {
-    const updated = await invoke<AutoResponse[]>("toggle_auto_response", {
-      id,
-      enabled: !enabled,
-    });
-    setPatterns(updated);
+    try {
+      const updated = await invoke<AutoResponse[]>("toggle_auto_response", {
+        id,
+        enabled: !enabled,
+      });
+      setPatterns(updated);
+    } catch (err) {
+      console.error("Failed to toggle auto-response:", err);
+    }
   };
 
   const overlayStyle: React.CSSProperties = {
