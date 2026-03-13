@@ -24,6 +24,7 @@ pub fn run() {
             commands::kill_session,
             commands::list_sessions,
             commands::send_input,
+            commands::broadcast_input,
             commands::restore_sessions,
         ])
         .run(tauri::generate_context!())

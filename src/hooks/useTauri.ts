@@ -30,3 +30,7 @@ export async function createSession(args: { name: string; agent_type: string; wo
 export async function killSession(sessionId: string) {
   return invoke<void>("kill_session", { sessionId });
 }
+
+export async function broadcastInput(input: string) {
+  return invoke<string[]>("broadcast_input", { input });
+}

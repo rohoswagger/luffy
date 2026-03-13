@@ -141,3 +141,19 @@ pub async fn restore_sessions(
 
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
+
+/// Send the same input to all active sessions simultaneously.
+#[tauri::command]
+pub async fn broadcast_input(
+    state: State<'_, AppState>,
+    input: String,
+) -> Result<Vec<String>, String> {
+    let sessions = state.session_mgr.list_sessions();
+    let mut errors = vec![];
+    for session in &sessions {
+        if let Err(e) = state.pty_mgr.write_input(&session.id, &input) {
+            errors.push(format!("{}: {}", session.name, e));
+        }
+    }
+    Ok(errors) // returns list of session names that failed (empty = all succeeded)
+}

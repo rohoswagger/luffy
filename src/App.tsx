@@ -1,15 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { TerminalPane } from "./components/TerminalPane";
+import { PaneGrid } from "./components/PaneGrid";
+import type { Layout } from "./components/PaneGrid";
+import { BroadcastBar } from "./components/BroadcastBar";
+import { LayoutSwitcher } from "./components/LayoutSwitcher";
 import { NewSessionModal } from "./components/NewSessionModal";
 import { useSessionStore } from "./store/sessions";
-import { useTauriEvents, createSession, killSession } from "./hooks/useTauri";
+import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
 export default function App() {
   useTauriEvents();
 
   const { sessions, activeSessionId, setActiveSession, removeSession } = useSessionStore();
   const [showNewModal, setShowNewModal] = useState(false);
+  const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
 
@@ -76,6 +81,11 @@ export default function App() {
         handleKill(activeSessionId);
         return;
       }
+
+      // Cmd+Shift+1/2/4: switch layout
+      if (meta && e.shiftKey && e.key === "1") { e.preventDefault(); setLayout("1up"); return; }
+      if (meta && e.shiftKey && e.key === "2") { e.preventDefault(); setLayout("2up"); return; }
+      if (meta && e.shiftKey && e.key === "4") { e.preventDefault(); setLayout("4up"); return; }
     };
 
     window.addEventListener("keydown", handler);
@@ -93,33 +103,65 @@ export default function App() {
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>
-        {activeSession && (
-          <div style={{
-            height: 36,
-            background: "var(--bg-secondary)",
-            borderBottom: "1px solid var(--border)",
-            display: "flex", alignItems: "center", padding: "0 16px", gap: 12,
-            fontSize: 12, color: "var(--text-secondary)",
-          }}>
-            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{activeSession.name}</span>
-            {activeSession.branch && <span>⎇ {activeSession.branch}</span>}
-            {activeSession.worktree_path && <span>{activeSession.worktree_path}</span>}
+        {/* Toolbar */}
+        <div style={{
+          height: 36,
+          background: "var(--bg-secondary)",
+          borderBottom: "1px solid var(--border)",
+          display: "flex", alignItems: "center", padding: "0 12px", gap: 10,
+          fontSize: 12, color: "var(--text-secondary)", flexShrink: 0,
+        }}>
+          {layout === "1up" && activeSession && (
+            <>
+              <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{activeSession.name}</span>
+              {activeSession.branch && <span>⎇ {activeSession.branch}</span>}
+              {activeSession.worktree_path && <span style={{ fontSize: 11 }}>{activeSession.worktree_path}</span>}
+            </>
+          )}
+          {layout !== "1up" && (
+            <span style={{ color: "var(--text-secondary)", fontSize: 11 }}>
+              {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+            </span>
+          )}
+          <div style={{ marginLeft: "auto" }}>
+            <LayoutSwitcher current={layout} onChange={setLayout} />
           </div>
-        )}
+        </div>
 
-        <div style={{ flex: 1, overflow: "hidden" }}>
-          {sessions.map((s) => (
-            <TerminalPane
-              key={s.id}
-              sessionId={s.id}
-              tmuxSession={s.tmux_session}
-              active={s.id === activeSessionId}
+        {/* Pane area */}
+        <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
+          {layout === "1up" ? (
+            sessions.length > 0 ? (
+              sessions.map((s) => (
+                <TerminalPane
+                  key={s.id}
+                  sessionId={s.id}
+                  tmuxSession={s.tmux_session}
+                  active={s.id === activeSessionId}
+                />
+              ))
+            ) : (
+              <TerminalPane sessionId={null} tmuxSession={null} active />
+            )
+          ) : (
+            <PaneGrid
+              sessions={sessions}
+              activeId={activeSessionId}
+              onActivate={setActiveSession}
+              layout={layout}
             />
-          ))}
-          {sessions.length === 0 && (
-            <TerminalPane sessionId={null} tmuxSession={null} active />
           )}
         </div>
+
+        {/* Broadcast bar — only when multiple sessions exist */}
+        {sessions.length > 1 && (
+          <BroadcastBar
+            sessionCount={sessions.length}
+            onBroadcast={(text) => {
+              broadcastInput(text).catch(console.error);
+            }}
+          />
+        )}
       </div>
 
       <NewSessionModal open={showNewModal} onClose={() => setShowNewModal(false)} onCreate={handleCreate} />

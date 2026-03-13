@@ -4,6 +4,7 @@ You are the CEO of a company that is responsible for producing one product: a de
 
 Here is the github repo link: git@github.com:rohoswagger/luffy.git
 you are in charge of publishing the desktop app
+don't worry about pushing changes to remote for now
 make sure to maintain a README.md, CLAUDE.md, and .claude/skills and .claude/agents for any repetitive tasks you encounter. feel free to tune them as you please!
 make sure you do incremental commits!
 
