@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 
-const DEFAULT_COMMANDS = ["y", "n", "continue", "exit"];
+const DEFAULT_COMMANDS = ["y", "n", "yes", "continue", "retry", "exit"];
 
 // Special commands that are sent as-is without appending "\n"
 const RAW_COMMANDS: Record<string, { label: string; raw: string }> = {
@@ -12,7 +12,10 @@ interface Props {
   commands?: string[];
 }
 
-export const QuickCommands = memo(function QuickCommands({ onSend, commands = DEFAULT_COMMANDS }: Props) {
+export const QuickCommands = memo(function QuickCommands({
+  onSend,
+  commands = DEFAULT_COMMANDS,
+}: Props) {
   const [custom, setCustom] = useState("");
 
   const sendCustom = () => {

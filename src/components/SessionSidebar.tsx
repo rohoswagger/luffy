@@ -146,6 +146,7 @@ export function SessionSidebar({
           }}
         >
           <input
+            autoFocus
             className="input input-sm"
             placeholder="Filter…"
             value={filter}
@@ -195,6 +196,7 @@ export function SessionSidebar({
                   gap: 5,
                   overflow: "hidden",
                   flex: 1,
+                  minWidth: 0,
                 }}
               >
                 <span
@@ -254,6 +256,7 @@ export function SessionSidebar({
                       onMarkDone(session.id);
                     }}
                     title="Mark as done"
+                    aria-label="Mark as done"
                     className="btn-icon"
                     style={{ opacity: 1 }}
                   >
@@ -267,6 +270,7 @@ export function SessionSidebar({
                       onRestart(session.id);
                     }}
                     title="Restart session"
+                    aria-label="Restart session"
                     className="btn-icon"
                     style={{ opacity: 1, color: "var(--yellow)" }}
                   >
@@ -280,6 +284,7 @@ export function SessionSidebar({
                       onFork(session.id);
                     }}
                     title="Fork session"
+                    aria-label="Fork session"
                     className="btn-icon"
                     style={{ opacity: 1 }}
                   >
@@ -292,6 +297,7 @@ export function SessionSidebar({
                     onKill(session.id);
                   }}
                   title="Kill session"
+                  aria-label="Kill session"
                   className="btn-icon"
                   style={{ opacity: 1, color: "var(--text-3)" }}
                 >

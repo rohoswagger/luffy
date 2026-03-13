@@ -75,18 +75,18 @@ export function TerminalPane({
     termRef.current = term;
     fitAddonRef.current = fitAddon;
 
+    let isCancelled = false;
+
     // Replay stored output buffer so terminal has history on mount
     invoke<string>("get_pty_output", { sessionId })
       .then((stored) => {
-        if (stored) term.write(stored);
+        if (stored && !isCancelled) term.write(stored);
       })
       .catch(() => {});
 
     term.onData((data: string) => {
       invoke("send_input", { sessionId, input: data }).catch(console.error);
     });
-
-    let isCancelled = false;
     listen<string>(`pty-output-${sessionId}`, (event) => {
       term.write(event.payload);
     }).then((unlisten) => {
