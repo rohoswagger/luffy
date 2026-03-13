@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
-import { formatRelativeTime } from "../utils/time";
+import { formatRelativeTime, formatDuration } from "../utils/time";
 import { sortSessionsByPriority, isSessionStuck } from "../utils/sessions";
 
 interface Props {
@@ -264,11 +264,15 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   ${session.total_cost_usd.toFixed(2)}{session.cost_budget_usd > 0 ? `/$${session.cost_budget_usd.toFixed(2)}` : ""}
                 </span>
               )}
-              {session.last_activity && (
+              {["THINKING", "WAITING"].includes(session.status) && session.created_at ? (
+                <span title={`Running since ${new Date(session.created_at).toLocaleTimeString()}`} style={{ fontSize: 10, color: "var(--text-secondary)", flexShrink: 0 }}>
+                  {formatDuration(session.created_at, now)}
+                </span>
+              ) : session.last_activity ? (
                 <span style={{ fontSize: 10, color: "var(--text-secondary)", flexShrink: 0 }}>
                   {formatRelativeTime(session.last_activity, now)}
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
         ))}
