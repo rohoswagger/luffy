@@ -316,11 +316,19 @@ impl SessionManager {
         })
     }
 
-    /// Return (name, agent_type, working_dir) for forking a session.
-    pub fn get_fork_args(&self, session_id: &str) -> Option<(String, AgentType, Option<String>)> {
+    /// Return (name, agent_type, working_dir, startup_command) for forking a session.
+    pub fn get_fork_args(
+        &self,
+        session_id: &str,
+    ) -> Option<(String, AgentType, Option<String>, Option<String>)> {
         self.sessions.lock().unwrap().get(session_id).map(|s| {
             let fork_name = format!("{}-fork", s.name);
-            (fork_name, s.agent_type.clone(), s.worktree_path.clone())
+            (
+                fork_name,
+                s.agent_type.clone(),
+                s.worktree_path.clone(),
+                s.startup_command.clone(),
+            )
         })
     }
 
@@ -495,6 +503,7 @@ mod tests {
         let mgr = SessionManager::new();
         let mut s = Session::new("my-feature", AgentType::ClaudeCode);
         s.worktree_path = Some("/repo/worktree".to_string());
+        s.startup_command = Some("claude".to_string());
         let id = s.id.clone();
         mgr.sessions.lock().unwrap().insert(id.clone(), s);
 
@@ -502,12 +511,42 @@ mod tests {
         assert_eq!(args.0, "my-feature-fork");
         assert_eq!(args.1, AgentType::ClaudeCode);
         assert_eq!(args.2, Some("/repo/worktree".to_string()));
+        assert_eq!(args.3, Some("claude".to_string()));
     }
 
     #[test]
     fn get_fork_args_returns_none_for_missing_session() {
         let mgr = SessionManager::new();
         assert!(mgr.get_fork_args("nonexistent").is_none());
+    }
+
+    #[test]
+    fn set_startup_command_stores_command() {
+        let mgr = SessionManager::new();
+        let s = Session::new("s", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        mgr.set_startup_command(&id, Some("claude".to_string()));
+        assert_eq!(
+            mgr.get_session(&id).unwrap().startup_command.as_deref(),
+            Some("claude")
+        );
+    }
+
+    #[test]
+    fn get_restart_args_returns_full_config() {
+        let mgr = SessionManager::new();
+        let mut s = Session::new("my-session", AgentType::ClaudeCode);
+        s.startup_command = Some("claude --yes".to_string());
+        s.cost_budget_usd = 5.0;
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let (name, _, _, cmd, budget) = mgr.get_restart_args(&id).unwrap();
+        assert_eq!(name, "my-session");
+        assert_eq!(cmd.as_deref(), Some("claude --yes"));
+        assert_eq!(budget, 5.0);
     }
 
     #[test]

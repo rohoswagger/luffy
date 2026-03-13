@@ -307,22 +307,31 @@ pub async fn set_session_note(
     Ok(())
 }
 
-/// Fork an existing session: create a new session with the same agent type and working dir.
+/// Fork an existing session: create a new session with the same agent type, working dir, and startup command.
 #[tauri::command]
 pub async fn fork_session(
     app: AppHandle,
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<SessionDto, String> {
-    let (name, agent_type, working_dir) = state
+    let (name, agent_type, working_dir, startup_command) = state
         .session_mgr
         .get_fork_args(&session_id)
         .ok_or_else(|| "Session not found".to_string())?;
 
-    let session = state
+    let mut session = state
         .session_mgr
         .create_session(&name, agent_type, working_dir.as_deref())
         .map_err(|e| e.to_string())?;
+
+    if let Some(ref cmd) = startup_command {
+        if !cmd.is_empty() {
+            state
+                .session_mgr
+                .set_startup_command(&session.id, Some(cmd.clone()));
+            session.startup_command = Some(cmd.clone());
+        }
+    }
 
     let session_id_new = session.id.clone();
     let tmux_name = session.tmux_session.clone();
@@ -332,9 +341,18 @@ pub async fn fork_session(
         &state.pty_mgr,
         state.session_mgr.clone(),
         app.clone(),
-        session_id_new,
+        session_id_new.clone(),
         &tmux_name,
     )?;
+
+    if let Some(ref cmd) = startup_command {
+        if !cmd.is_empty() {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            let _ = state
+                .pty_mgr
+                .write_input(&session_id_new, &format!("{}\n", cmd));
+        }
+    }
 
     let sessions: Vec<SessionDto> = state
         .session_mgr
