@@ -243,6 +243,35 @@ describe("useKeyboardShortcuts", () => {
     expect(opts.onSetLayout).toHaveBeenCalledWith("4up");
   });
 
+  it("uses latest callbacks after rerender without re-registering listener", () => {
+    const addSpy = vi.spyOn(window, "addEventListener");
+    const opts = defaults();
+    const { rerender } = renderHook((props) => useKeyboardShortcuts(props), {
+      initialProps: opts,
+    });
+
+    const initialAddCount = addSpy.mock.calls.filter(
+      ([event]) => event === "keydown",
+    ).length;
+
+    // Rerender with a new onPalette callback
+    const newOnPalette = vi.fn();
+    rerender({ ...opts, onPalette: newOnPalette });
+
+    // Listener should NOT have been re-added (stable handler via ref)
+    const afterRerenderAddCount = addSpy.mock.calls.filter(
+      ([event]) => event === "keydown",
+    ).length;
+    expect(afterRerenderAddCount).toBe(initialAddCount);
+
+    // But the NEW callback should be called
+    fireKey("k", { metaKey: true });
+    expect(newOnPalette).toHaveBeenCalledOnce();
+    expect(opts.onPalette).not.toHaveBeenCalled();
+
+    addSpy.mockRestore();
+  });
+
   it("cleans up listener on unmount", () => {
     const removeSpy = vi.spyOn(window, "removeEventListener");
     const opts = defaults();

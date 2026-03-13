@@ -283,7 +283,7 @@ export default function App() {
       }
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch(() => {});
     };
   }, [handleQuickCreate, handleKill, activeSessionId]);
 

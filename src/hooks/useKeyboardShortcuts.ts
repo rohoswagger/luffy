@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { SessionData } from "../store/sessions";
 import type { Layout } from "../components/PaneGrid";
 
@@ -24,10 +24,15 @@ export interface KeyboardShortcutOptions {
 }
 
 export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
+  const optsRef = useRef(opts);
+  optsRef.current = opts;
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      const o = optsRef.current;
+
       if (e.key === "Escape") {
-        opts.onEscape();
+        o.onEscape();
         return;
       }
 
@@ -36,118 +41,114 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
 
       if (meta && e.shiftKey && key === "n") {
         e.preventDefault();
-        opts.onNewSessionAdvanced();
+        o.onNewSessionAdvanced();
         return;
       }
       if (meta && key === "n") {
         e.preventDefault();
-        opts.onNewSession();
+        o.onNewSession();
         return;
       }
       if (meta && key === "t") {
         e.preventDefault();
-        opts.onTemplates();
+        o.onTemplates();
         return;
       }
       if (meta && key === "b") {
         e.preventDefault();
-        opts.onToggleSidebar();
+        o.onToggleSidebar();
         return;
       }
       if (meta && e.shiftKey && key === "r") {
         e.preventDefault();
-        opts.onAutoRespond();
+        o.onAutoRespond();
         return;
       }
       if (meta && key === "k") {
         e.preventDefault();
-        opts.onPalette();
+        o.onPalette();
         return;
       }
       if (meta && e.shiftKey && key === "f") {
         e.preventDefault();
-        opts.onSearch();
+        o.onSearch();
         return;
       }
       if (meta && key === "l") {
         e.preventDefault();
-        opts.onToggleEventLog();
+        o.onToggleEventLog();
         return;
       }
       if (meta && e.key === "/") {
         e.preventDefault();
-        opts.onToggleHelp();
+        o.onToggleHelp();
         return;
       }
       if (meta && e.shiftKey && key === "a") {
         e.preventDefault();
-        opts.onJumpNextWaiting();
+        o.onJumpNextWaiting();
         return;
       }
 
       // Cmd+Shift+1/2/4: switch layout (must check before Cmd+1-9)
       if (meta && e.shiftKey && e.key === "1") {
         e.preventDefault();
-        opts.onSetLayout("1up");
+        o.onSetLayout("1up");
         return;
       }
       if (meta && e.shiftKey && e.key === "2") {
         e.preventDefault();
-        opts.onSetLayout("2up");
+        o.onSetLayout("2up");
         return;
       }
       if (meta && e.shiftKey && e.key === "4") {
         e.preventDefault();
-        opts.onSetLayout("4up");
+        o.onSetLayout("4up");
         return;
       }
 
       if (meta && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
-        const s = opts.sessions[parseInt(e.key, 10) - 1];
-        if (s) opts.onSelectSession(s.id);
+        const s = o.sessions[parseInt(e.key, 10) - 1];
+        if (s) o.onSelectSession(s.id);
         return;
       }
 
       if (meta && e.key === "[") {
         e.preventDefault();
-        const idx = opts.sessions.findIndex(
-          (s) => s.id === opts.activeSessionId,
-        );
-        if (idx > 0) opts.onSelectSession(opts.sessions[idx - 1].id);
+        const idx = o.sessions.findIndex((s) => s.id === o.activeSessionId);
+        if (idx > 0) o.onSelectSession(o.sessions[idx - 1].id);
         return;
       }
 
       if (meta && e.key === "]") {
         e.preventDefault();
-        const idx = opts.sessions.findIndex(
-          (s) => s.id === opts.activeSessionId,
-        );
-        if (idx < opts.sessions.length - 1)
-          opts.onSelectSession(opts.sessions[idx + 1].id);
+        const idx = o.sessions.findIndex((s) => s.id === o.activeSessionId);
+        if (idx < o.sessions.length - 1)
+          o.onSelectSession(o.sessions[idx + 1].id);
         return;
       }
 
-      if (meta && key === "w" && opts.activeSessionId) {
+      if (meta && key === "w" && o.activeSessionId) {
         e.preventDefault();
-        opts.onKill(opts.activeSessionId);
+        o.onKill(o.activeSessionId);
         return;
       }
 
-      if (meta && key === "d" && opts.activeSessionId) {
+      if (meta && key === "d" && o.activeSessionId) {
         e.preventDefault();
-        opts.onMarkDone(opts.activeSessionId);
+        o.onMarkDone(o.activeSessionId);
         return;
       }
 
-      if (meta && key === "e" && opts.activeSessionId) {
+      if (meta && key === "e" && o.activeSessionId) {
         e.preventDefault();
-        opts.onExport(opts.activeSessionId);
+        o.onExport(o.activeSessionId);
         return;
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [opts]);
+  }, []);
 }
