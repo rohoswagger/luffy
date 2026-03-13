@@ -231,9 +231,7 @@ export function AutoResponsePanel({ open, onClose }: Props) {
               border: "none",
               color: "var(--color-paper)",
               fontWeight: 600,
-              cursor: newPattern.trim() ? "pointer" : "default",
               flexShrink: 0,
-              opacity: newPattern.trim() ? 1 : 0.4,
             }}
           >
             Add
