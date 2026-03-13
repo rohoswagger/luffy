@@ -41,12 +41,24 @@ describe("SessionSidebar", () => {
 
   it("shows cost when total_cost_usd > 0", () => {
     render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
-    expect(screen.getByText(/\$0\.12/)).toBeInTheDocument();
+    // Both per-session cost and footer total show the amount
+    expect(screen.getAllByText(/\$0\.12/).length).toBeGreaterThan(0);
   });
 
   it("does not show cost when total_cost_usd is 0", () => {
     render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
     // Only session 1 has cost; session 2 has 0 — should not show $0.00
     expect(screen.queryByText(/\$0\.00/)).toBeNull();
+  });
+
+  it("shows total cost in footer when any session has cost", () => {
+    render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
+    expect(screen.getByText(/total \$/)).toBeInTheDocument();
+  });
+
+  it("does not show total cost in footer when all costs are 0", () => {
+    const zeroCostSessions = mockSessions.map((s) => ({ ...s, total_cost_usd: 0 }));
+    render(<SessionSidebar sessions={zeroCostSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
+    expect(screen.queryByText(/total \$/)).toBeNull();
   });
 });

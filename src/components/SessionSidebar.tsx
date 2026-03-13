@@ -1,5 +1,7 @@
+import { useState, useEffect } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
+import { formatRelativeTime } from "../utils/time";
 
 interface Props {
   sessions: SessionData[];
@@ -16,6 +18,14 @@ const AGENT_ICONS: Record<string, string> = {
 };
 
 export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill }: Props) {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
+
   return (
     <aside style={{
       width: 260,
@@ -105,13 +115,21 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   ${session.total_cost_usd.toFixed(2)}
                 </span>
               )}
+              {session.last_activity && (
+                <span style={{ fontSize: 10, color: "var(--text-secondary)", flexShrink: 0 }}>
+                  {formatRelativeTime(session.last_activity, now)}
+                </span>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", fontSize: 10, color: "var(--text-secondary)" }}>
-        {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+      <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", fontSize: 10, color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
+        <span>{sessions.length} session{sessions.length !== 1 ? "s" : ""}</span>
+        {totalCost > 0 && (
+          <span style={{ color: "#4ade80" }}>total ${totalCost.toFixed(2)}</span>
+        )}
       </div>
     </aside>
   );
