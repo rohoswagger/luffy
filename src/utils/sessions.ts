@@ -6,7 +6,10 @@ const STUCK_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
  * A session is "stuck" if it's been THINKING without activity for more than 10 minutes.
  * WAITING is not stuck — it's waiting for user input (expected state).
  */
-export function isSessionStuck(session: SessionData, now: Date = new Date()): boolean {
+export function isSessionStuck(
+  session: SessionData,
+  now: Date = new Date(),
+): boolean {
   if (session.status !== "THINKING") return false;
   if (!session.last_activity) return false;
   const lastActivity = new Date(session.last_activity);
@@ -17,17 +20,20 @@ export function isSessionStuck(session: SessionData, now: Date = new Date()): bo
 const STATUS_PRIORITY: Record<SessionData["status"], number> = {
   WAITING: 0,
   THINKING: 1,
-  IDLE: 2,
-  ERROR: 3,
+  ERROR: 2,
+  IDLE: 3,
   DONE: 4,
 };
 
 /**
- * Sort sessions by priority: WAITING > THINKING > IDLE > ERROR > DONE.
+ * Sort sessions by priority: WAITING > THINKING > ERROR > IDLE > DONE.
+ * ERROR sessions appear before IDLE so failed sessions are visible at a glance.
  * Stable sort — preserves relative order within the same status.
  */
 export function sortSessionsByPriority(sessions: SessionData[]): SessionData[] {
-  return [...sessions].sort((a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]);
+  return [...sessions].sort(
+    (a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status],
+  );
 }
 
 /**
@@ -35,7 +41,10 @@ export function sortSessionsByPriority(sessions: SessionData[]): SessionData[] {
  * Cycles through waiting sessions. If currentId is one of them, returns the next one.
  * Returns null if no WAITING sessions exist.
  */
-export function nextWaitingSessionId(sessions: SessionData[], currentId: string | null): string | null {
+export function nextWaitingSessionId(
+  sessions: SessionData[],
+  currentId: string | null,
+): string | null {
   const waiting = sessions.filter((s) => s.status === "WAITING");
   if (waiting.length === 0) return null;
   if (!currentId) return waiting[0].id;

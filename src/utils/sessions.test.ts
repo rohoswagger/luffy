@@ -1,11 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { nextWaitingSessionId, sortSessionsByPriority, isSessionStuck } from "./sessions";
+import {
+  nextWaitingSessionId,
+  sortSessionsByPriority,
+  isSessionStuck,
+} from "./sessions";
 import type { SessionData } from "../store/sessions";
 
-const makeSession = (id: string, status: SessionData["status"]): SessionData => ({
-  id, name: id, tmux_session: "", status, agent_type: "generic",
-  worktree_path: null, branch: null, created_at: "", last_activity: "",
-  total_cost_usd: 0, cost_budget_usd: 0, note: null, last_output_preview: "", startup_command: null,
+const makeSession = (
+  id: string,
+  status: SessionData["status"],
+): SessionData => ({
+  id,
+  name: id,
+  tmux_session: "",
+  status,
+  agent_type: "generic",
+  worktree_path: null,
+  branch: null,
+  created_at: "",
+  last_activity: "",
+  total_cost_usd: 0,
+  cost_budget_usd: 0,
+  note: null,
+  last_output_preview: "",
+  startup_command: null,
 });
 
 describe("isSessionStuck", () => {
@@ -40,7 +58,7 @@ describe("isSessionStuck", () => {
 });
 
 describe("sortSessionsByPriority", () => {
-  it("puts WAITING before THINKING before IDLE before ERROR before DONE", () => {
+  it("puts WAITING > THINKING > ERROR > IDLE > DONE", () => {
     const sessions = [
       makeSession("done", "DONE"),
       makeSession("error", "ERROR"),
@@ -51,8 +69,8 @@ describe("sortSessionsByPriority", () => {
     const sorted = sortSessionsByPriority(sessions);
     expect(sorted[0].id).toBe("waiting");
     expect(sorted[1].id).toBe("thinking");
-    expect(sorted[2].id).toBe("idle");
-    expect(sorted[3].id).toBe("error");
+    expect(sorted[2].id).toBe("error");
+    expect(sorted[3].id).toBe("idle");
     expect(sorted[4].id).toBe("done");
   });
 
@@ -74,12 +92,20 @@ describe("nextWaitingSessionId", () => {
   });
 
   it("returns first WAITING session when currentId is null", () => {
-    const sessions = [makeSession("a", "IDLE"), makeSession("b", "WAITING"), makeSession("c", "WAITING")];
+    const sessions = [
+      makeSession("a", "IDLE"),
+      makeSession("b", "WAITING"),
+      makeSession("c", "WAITING"),
+    ];
     expect(nextWaitingSessionId(sessions, null)).toBe("b");
   });
 
   it("returns next WAITING session when current is WAITING", () => {
-    const sessions = [makeSession("a", "WAITING"), makeSession("b", "IDLE"), makeSession("c", "WAITING")];
+    const sessions = [
+      makeSession("a", "WAITING"),
+      makeSession("b", "IDLE"),
+      makeSession("c", "WAITING"),
+    ];
     expect(nextWaitingSessionId(sessions, "a")).toBe("c");
   });
 
@@ -89,7 +115,10 @@ describe("nextWaitingSessionId", () => {
   });
 
   it("returns first WAITING when currentId is not in WAITING list", () => {
-    const sessions = [makeSession("a", "THINKING"), makeSession("b", "WAITING")];
+    const sessions = [
+      makeSession("a", "THINKING"),
+      makeSession("b", "WAITING"),
+    ];
     expect(nextWaitingSessionId(sessions, "a")).toBe("b");
   });
 });
