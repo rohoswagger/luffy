@@ -8,6 +8,7 @@ import { LayoutSwitcher } from "./components/LayoutSwitcher";
 import { NewSessionModal } from "./components/NewSessionModal";
 import { CommandPalette } from "./components/CommandPalette";
 import { SearchPanel } from "./components/SearchPanel";
+import { EventLog } from "./components/EventLog";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
@@ -18,6 +19,7 @@ export default function App() {
   const [showNewModal, setShowNewModal] = useState(false);
   const [showPalette, setShowPalette] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
+  const [showEventLog, setShowEventLog] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
@@ -60,6 +62,7 @@ export default function App() {
       if (meta && e.key === "n") { e.preventDefault(); setShowNewModal(true); return; }
       if (meta && e.key === "k") { e.preventDefault(); setShowPalette(true); return; }
       if (meta && e.shiftKey && e.key === "f") { e.preventDefault(); setShowSearch(true); return; }
+      if (meta && e.key === "l") { e.preventDefault(); setShowEventLog((v) => !v); return; }
 
       if (meta && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
@@ -129,12 +132,19 @@ export default function App() {
               {sessions.length} session{sessions.length !== 1 ? "s" : ""}
             </span>
           )}
-          <div style={{ marginLeft: "auto" }}>
+          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            <button
+              title="Toggle event log (Cmd+L)"
+              onClick={() => setShowEventLog((v) => !v)}
+              style={{ background: showEventLog ? "var(--bg-tertiary)" : "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
+            >
+              ☰ log
+            </button>
             <LayoutSwitcher current={layout} onChange={setLayout} />
           </div>
         </div>
 
-        {/* Pane area */}
+        {/* Pane area + optional event log side panel */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex" }}>
           {layout === "1up" ? (
             sessions.length > 0 ? (
@@ -156,6 +166,11 @@ export default function App() {
               onActivate={setActiveSession}
               layout={layout}
             />
+          )}
+          {showEventLog && activeSession && (
+            <div style={{ width: 280, borderLeft: "1px solid var(--border)", background: "var(--bg-secondary)", overflowY: "auto", flexShrink: 0 }}>
+              <EventLog sessionId={activeSession.id} sessionName={activeSession.name} />
+            </div>
           )}
         </div>
 

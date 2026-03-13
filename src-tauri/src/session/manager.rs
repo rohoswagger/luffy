@@ -3,6 +3,7 @@ use std::process::Command;
 use std::sync::{Arc, Mutex};
 use anyhow::{anyhow, Result};
 use super::model::{Session, AgentStatus, AgentType};
+use super::events::SessionEvent;
 
 #[derive(Clone)]
 pub struct SessionManager {
@@ -84,6 +85,7 @@ impl SessionManager {
         if let Some(s) = sessions.get_mut(session_id) {
             if cost > s.total_cost_usd {
                 s.total_cost_usd = cost;
+                s.events.push(SessionEvent::cost_updated(cost));
             }
         }
     }
@@ -92,9 +94,22 @@ impl SessionManager {
     pub fn update_status(&self, session_id: &str, status: AgentStatus) {
         let mut sessions = self.sessions.lock().unwrap();
         if let Some(s) = sessions.get_mut(session_id) {
+            if s.status != status {
+                let from = s.status.to_string();
+                let to = status.to_string();
+                s.events.push(SessionEvent::status_changed(&from, &to));
+            }
             s.status = status;
             s.last_activity = chrono::Utc::now();
         }
+    }
+
+    /// Get events for a session.
+    pub fn get_events(&self, session_id: &str) -> Vec<SessionEvent> {
+        self.sessions.lock().unwrap()
+            .get(session_id)
+            .map(|s| s.events.clone())
+            .unwrap_or_default()
     }
 
     /// Load existing luffy-managed tmux sessions (for app restart persistence).
@@ -131,6 +146,7 @@ impl SessionManager {
                     branch: None,
                     agent_type: AgentType::Generic,
                     total_cost_usd: 0.0,
+                    events: vec![SessionEvent::created()],
                 };
                 sessions.insert(session.id.clone(), session.clone());
                 restored.push(session);

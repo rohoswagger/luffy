@@ -168,6 +168,15 @@ pub async fn restore_sessions(
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
 
+/// Return the event log for a session.
+#[tauri::command]
+pub async fn get_session_events(
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<Vec<crate::session::SessionEvent>, String> {
+    Ok(state.session_mgr.get_events(&session_id))
+}
+
 /// Resize a session's PTY to match the frontend terminal dimensions.
 #[tauri::command]
 pub async fn resize_pty(

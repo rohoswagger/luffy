@@ -29,6 +29,7 @@ pub fn run() {
             commands::restore_sessions,
             commands::search_output,
             commands::resize_pty,
+            commands::get_session_events,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use super::events::SessionEvent;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AgentStatus {
@@ -45,6 +46,7 @@ pub struct Session {
     pub branch: Option<String>,
     pub agent_type: AgentType,
     pub total_cost_usd: f64,
+    pub events: Vec<SessionEvent>,
 }
 
 impl Session {
@@ -62,6 +64,7 @@ impl Session {
             branch: None,
             agent_type,
             total_cost_usd: 0.0,
+            events: vec![SessionEvent::created()],
         }
     }
 }
