@@ -64,24 +64,14 @@ fn is_waiting_for_input(output: &str) -> bool {
 }
 
 fn is_error(output: &str) -> bool {
-    // Use specific multi-word patterns to avoid false positives on common single characters
-    let patterns = [
-        "Error:",
-        "error:",
-        "ERROR:",
-        "Failed:",
-        "failed:",
-        "FAILED:",
-        "fatal:",
-        "Fatal:",
-        "FATAL:",
-        "panic:",
-        "PANIC:",
-        "Traceback (most recent call last)",
-    ];
+    use std::sync::OnceLock;
+    static RE: OnceLock<Regex> = OnceLock::new();
+    let re = RE.get_or_init(|| {
+        Regex::new(r"(?m)(^\s*(?:Error|ERROR|error|Fatal|FATAL|fatal|Failed|FAILED|failed|panic|PANIC):\s|Traceback \(most recent call last\))").unwrap()
+    });
     let start = output.ceil_char_boundary(output.len().saturating_sub(500));
     let recent = &output[start..];
-    patterns.iter().any(|p| recent.contains(p))
+    re.is_match(recent)
 }
 
 fn is_done(output: &str) -> bool {
@@ -92,7 +82,6 @@ fn is_done(output: &str) -> bool {
         "Task complete",
         "All done",
         "Completed successfully",
-        "LGTM",
         "No changes to make",
         "Nothing to do",
         "Cancelled",
@@ -245,5 +234,36 @@ mod tests {
         // If output contains both a spinner and a prompt, waiting should win
         let output = "⠋ Working...\nDo you want to run this command?";
         assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
+    }
+
+    #[test]
+    fn error_does_not_false_positive_on_inline_error() {
+        // "Error:" appearing mid-line (not at line start) should NOT trigger error
+        let output = "The code handles Error: gracefully\nContinuing...";
+        assert_eq!(detect_status(output), None);
+    }
+
+    #[test]
+    fn error_matches_line_start_error() {
+        let output = "Running...\nError: compilation failed";
+        assert_eq!(detect_status(output), Some(AgentStatus::Error));
+    }
+
+    #[test]
+    fn error_matches_indented_error() {
+        let output = "  error: cannot find module";
+        assert_eq!(detect_status(output), Some(AgentStatus::Error));
+    }
+
+    #[test]
+    fn done_does_not_false_positive_on_lgtm() {
+        let output = "Reviewer said LGTM on the PR";
+        assert_eq!(detect_status(output), None);
+    }
+
+    #[test]
+    fn error_does_not_match_mid_line() {
+        let output = "found 3 Error: messages in log";
+        assert_eq!(detect_status(output), None);
     }
 }
