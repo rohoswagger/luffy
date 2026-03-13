@@ -29,6 +29,7 @@ export default function App() {
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
+  const waitingCount = sessions.filter((s) => s.status === "WAITING").length;
 
   // Auto-select first session
   useEffect(() => {
@@ -156,6 +157,18 @@ export default function App() {
             </span>
           )}
           <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+            {waitingCount > 0 && (
+              <button
+                title={`${waitingCount} session${waitingCount > 1 ? "s" : ""} waiting for input — Cmd+Shift+A to jump`}
+                onClick={() => {
+                  const next = nextWaitingSessionId(sessions, activeSessionId);
+                  if (next) setActiveSession(next);
+                }}
+                style={{ background: "#d29922", border: "none", borderRadius: 4, color: "#000", cursor: "pointer", padding: "2px 8px", fontSize: 11, fontWeight: 700 }}
+              >
+                {waitingCount} waiting
+              </button>
+            )}
             {activeSession && (
               <button
                 title="Export session output to ~/Downloads"
