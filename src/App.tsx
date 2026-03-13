@@ -59,6 +59,7 @@ import { nextWaitingSessionId } from "./utils/sessions";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { StatusBadge } from "./components/StatusBadge";
 import { formatDuration } from "./utils/time";
+import logoSrc from "./assets/logo.png";
 
 export default function App() {
   useTauriEvents();
@@ -316,19 +317,18 @@ export default function App() {
                     justifyContent: "center",
                     background: "var(--color-paper)",
                     color: "var(--color-ishi)",
-                    gap: 12,
+                    gap: 16,
                   }}
                 >
-                  <span
+                  <img
+                    src={logoSrc}
+                    alt="Luffy"
                     style={{
-                      fontSize: "var(--text-lg)",
-                      color: "var(--color-sumi)",
-                      fontWeight: 500,
-                      letterSpacing: "0.08em",
+                      width: 64,
+                      height: 64,
+                      borderRadius: "var(--r-lg)",
                     }}
-                  >
-                    LUFFY
-                  </span>
+                  />
                   <span style={{ fontSize: "var(--text-sm)" }}>
                     Press{" "}
                     <kbd

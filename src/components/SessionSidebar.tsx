@@ -5,6 +5,7 @@ import type { SessionData } from "../store/sessions";
 import { formatRelativeTime, formatDuration } from "../utils/time";
 import { sortSessionsByPriority, isSessionStuck } from "../utils/sessions";
 import { AGENT_ICONS as BASE_AGENT_ICONS } from "../constants";
+import logoSrc from "../assets/logo.png";
 
 const AGENT_ICONS: Record<string, string> = {
   ...BASE_AGENT_ICONS,
@@ -108,16 +109,23 @@ export function SessionSidebar({
           gap: 8,
         }}
       >
-        <span
-          style={{
-            fontSize: "var(--text-sm)",
-            fontWeight: 700,
-            color: "var(--text-1)",
-            letterSpacing: "0.12em",
-          }}
-        >
-          LUFFY
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <img
+            src={logoSrc}
+            alt="Luffy"
+            style={{ width: 20, height: 20, borderRadius: 4 }}
+          />
+          <span
+            style={{
+              fontSize: "var(--text-sm)",
+              fontWeight: 700,
+              color: "var(--text-1)",
+              letterSpacing: "0.12em",
+            }}
+          >
+            LUFFY
+          </span>
+        </div>
         <button
           title="New session"
           onClick={onNewSession}
