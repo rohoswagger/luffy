@@ -183,14 +183,12 @@ export default function App() {
 
   const handleClearDone = useCallback(async () => {
     const doneSessions = sessions.filter((s) => s.status === "DONE");
-    for (const s of doneSessions) {
-      try {
+    await Promise.allSettled(
+      doneSessions.map(async (s) => {
         await killSession(s.id);
         removeSession(s.id);
-      } catch {
-        // ignore individual failures
-      }
-    }
+      }),
+    );
   }, [sessions, removeSession]);
 
   const handleMarkDone = useCallback(async (id: string) => {
