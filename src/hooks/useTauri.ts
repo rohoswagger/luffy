@@ -53,3 +53,7 @@ export async function broadcastInput(input: string) {
 export async function forkSession(sessionId: string) {
   return invoke<SessionData>("fork_session", { sessionId });
 }
+
+export async function setSessionNote(sessionId: string, note: string) {
+  return invoke<void>("set_session_note", { sessionId, note });
+}

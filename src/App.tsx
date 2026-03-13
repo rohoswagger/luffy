@@ -79,6 +79,7 @@ export default function App() {
       const meta = e.metaKey || e.ctrlKey;
 
       if (meta && e.key === "n") { e.preventDefault(); setShowNewModal(true); return; }
+      if (meta && e.key === "t") { e.preventDefault(); setShowTemplates(true); return; }
       if (meta && e.key === "k") { e.preventDefault(); setShowPalette(true); return; }
       if (meta && e.shiftKey && e.key === "f") { e.preventDefault(); setShowSearch(true); return; }
       if (meta && e.key === "l") { e.preventDefault(); setShowEventLog((v) => !v); return; }
@@ -274,7 +275,7 @@ export default function App() {
           const dir = t.working_dir;
           for (let i = 1; i <= t.count; i++) {
             const name = t.count > 1 ? `${base}-${i}` : base;
-            handleCreate({ name, agent_type: t.agent_type, working_dir: dir });
+            handleCreate({ name, agent_type: t.agent_type, working_dir: dir, startup_command: t.startup_command ?? undefined });
           }
         }}
       />

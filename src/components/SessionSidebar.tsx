@@ -24,6 +24,8 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
   const [now, setNow] = useState(new Date());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteValue, setNoteValue] = useState("");
   const [filter, setFilter] = useState("");
 
   useEffect(() => {
@@ -35,6 +37,17 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
     e.stopPropagation();
     setRenamingId(session.id);
     setRenameValue(session.name);
+  };
+
+  const startEditNote = (session: SessionData, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingNoteId(session.id);
+    setNoteValue(session.note ?? "");
+  };
+
+  const commitNote = (id: string) => {
+    invoke("set_session_note", { sessionId: id, note: noteValue.trim() }).catch(console.error);
+    setEditingNoteId(null);
   };
 
   const commitRename = (id: string) => {
@@ -167,12 +180,35 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                 ✕
               </button>
             </div>
-            {session.note && (
+            {editingNoteId === session.id ? (
+              <input
+                autoFocus
+                value={noteValue}
+                placeholder="Add a note..."
+                onChange={(e) => setNoteValue(e.target.value)}
+                onBlur={() => commitNote(session.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitNote(session.id);
+                  if (e.key === "Escape") setEditingNoteId(null);
+                }}
+                onClick={(e) => e.stopPropagation()}
+                style={{ fontSize: 10, background: "var(--bg-tertiary)", border: "1px solid var(--accent-blue)", borderRadius: 3, color: "var(--text-primary)", padding: "1px 4px", width: "100%" }}
+              />
+            ) : session.note ? (
               <div
                 title="Edit note"
-                style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: "italic" }}
+                onDoubleClick={(e) => startEditNote(session, e)}
+                style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: "italic", cursor: "text" }}
               >
                 {session.note}
+              </div>
+            ) : (
+              <div
+                title="Add note (double-click)"
+                onDoubleClick={(e) => startEditNote(session, e)}
+                style={{ fontSize: 10, color: "transparent", height: 14, cursor: "text" }}
+              >
+                &nbsp;
               </div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

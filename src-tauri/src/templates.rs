@@ -9,16 +9,19 @@ pub struct SessionTemplate {
     pub agent_type: String,
     pub working_dir: Option<String>,
     pub count: u32,
+    #[serde(default)]
+    pub startup_command: Option<String>,
 }
 
 impl SessionTemplate {
-    pub fn new(name: &str, agent_type: &str, working_dir: Option<String>, count: u32) -> Self {
+    pub fn new(name: &str, agent_type: &str, working_dir: Option<String>, count: u32, startup_command: Option<String>) -> Self {
         SessionTemplate {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.to_string(),
             agent_type: agent_type.to_string(),
             working_dir,
             count: count.max(1),
+            startup_command,
         }
     }
 }
@@ -80,7 +83,7 @@ mod tests {
 
     #[test]
     fn new_template_has_valid_id() {
-        let t = SessionTemplate::new("worker", "claude-code", Some("/repo".to_string()), 3);
+        let t = SessionTemplate::new("worker", "claude-code", Some("/repo".to_string()), 3, None);
         assert!(!t.id.is_empty());
         assert_eq!(t.name, "worker");
         assert_eq!(t.count, 3);
@@ -88,7 +91,7 @@ mod tests {
 
     #[test]
     fn count_clamped_to_min_1() {
-        let t = SessionTemplate::new("w", "generic", None, 0);
+        let t = SessionTemplate::new("w", "generic", None, 0, None);
         assert_eq!(t.count, 1);
     }
 
@@ -103,7 +106,7 @@ mod tests {
     #[test]
     fn add_and_load_template_roundtrips() {
         with_temp_home(|| {
-            let t = SessionTemplate::new("my-worker", "aider", None, 2);
+            let t = SessionTemplate::new("my-worker", "aider", None, 2, None);
             let saved = add_template(t.clone()).unwrap();
             assert_eq!(saved.len(), 1);
             assert_eq!(saved[0].name, "my-worker");
@@ -117,8 +120,8 @@ mod tests {
     #[test]
     fn delete_template_removes_by_id() {
         with_temp_home(|| {
-            let t1 = SessionTemplate::new("a", "claude-code", None, 1);
-            let t2 = SessionTemplate::new("b", "aider", None, 1);
+            let t1 = SessionTemplate::new("a", "claude-code", None, 1, None);
+            let t2 = SessionTemplate::new("b", "aider", None, 1, None);
             add_template(t1.clone()).unwrap();
             add_template(t2).unwrap();
             let after = delete_template(&t1.id).unwrap();

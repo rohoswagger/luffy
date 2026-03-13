@@ -7,6 +7,7 @@ interface Template {
   agent_type: string;
   working_dir: string | null;
   count: number;
+  startup_command: string | null;
 }
 
 interface Props {

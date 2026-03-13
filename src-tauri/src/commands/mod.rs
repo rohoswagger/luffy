@@ -244,8 +244,9 @@ pub async fn save_template(
     agent_type: String,
     working_dir: Option<String>,
     count: u32,
+    startup_command: Option<String>,
 ) -> Result<Vec<crate::templates::SessionTemplate>, String> {
-    let t = crate::templates::SessionTemplate::new(&name, &agent_type, working_dir, count);
+    let t = crate::templates::SessionTemplate::new(&name, &agent_type, working_dir, count, startup_command);
     crate::templates::add_template(t).map_err(|e| e.to_string())
 }
 
