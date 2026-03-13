@@ -34,12 +34,15 @@ fn is_waiting_for_input(output: &str) -> bool {
     use std::sync::OnceLock;
     static RE: OnceLock<Regex> = OnceLock::new();
     // Match agent-specific waiting patterns (narrow enough to avoid false positives):
-    //   ^\s*>\s*$  - line containing only "> " (interactive Python/node prompt)
-    //   ❯\s*$      - zsh right-arrow prompt at end of line
-    //   \?\s*[YyNn]\s*\]  - [Y/n] confirmation prompts
-    //   Press.*to\s  - "Press Enter to continue" style
+    //   ^\s*>\s*$      - line containing only ">" (interactive Python/node prompt)
+    //   ❯\s*$          - zsh right-arrow prompt at end of line
+    //   [Y/n]/[N/y]    - confirmation prompts
+    //   Press.*to\s    - "Press Enter to continue" style
+    //   \(y/n\)        - lowercase (y/n) variant used by some tools
+    //   │\s*>\s         - Claude Code input box prompt ("│ > ")
+    //   Do you want to - Claude Code permission prompts
     let re = RE.get_or_init(|| {
-        Regex::new(r"(?m)(^\s*>\s*$|❯\s*$|\[[Yy]/[Nn]\]|\[[Nn]/[Yy]\]|Press .{1,30} to\s)").unwrap()
+        Regex::new(r"(?m)(^\s*>\s*$|❯\s*$|\[[Yy]/[Nn]\]|\[[Nn]/[Yy]\]|Press .{1,30} to\s|\(y/n\)|\(Y/n\)|\(N/y\)|│\s*>\s|Do you want to )").unwrap()
     });
     re.is_match(output)
 }
@@ -53,7 +56,10 @@ fn is_error(output: &str) -> bool {
 
 fn is_done(output: &str) -> bool {
     // Match agent completion markers specifically (not just "Done" which appears in many contexts)
-    let patterns = ["✓ Done", "✔ Done", "Task complete", "All done", "Completed successfully", "LGTM"];
+    let patterns = [
+        "✓ Done", "✔ Done", "Task complete", "All done", "Completed successfully", "LGTM",
+        "No changes to make", "Nothing to do",
+    ];
     let recent = if output.len() > 200 { &output[output.len() - 200..] } else { output };
     patterns.iter().any(|p| recent.contains(p))
 }
@@ -124,5 +130,29 @@ mod tests {
         let mut output = "Error: something old\n".to_string();
         output.push_str(&"x".repeat(600));
         assert_eq!(detect_status(&output), None);
+    }
+
+    #[test]
+    fn detects_waiting_lowercase_yn_prompt() {
+        let output = "Run this command? (y/n) ";
+        assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
+    }
+
+    #[test]
+    fn detects_waiting_claude_code_input_box() {
+        let output = "╭──────────────────────────────────╮\n│ > \n╰──────────────────────────────────╯";
+        assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
+    }
+
+    #[test]
+    fn detects_waiting_do_you_want_to() {
+        let output = "Do you want to run this bash command?";
+        assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
+    }
+
+    #[test]
+    fn detects_done_no_changes() {
+        let output = "Checking files...\nNo changes to make";
+        assert_eq!(detect_status(output), Some(AgentStatus::Done));
     }
 }
