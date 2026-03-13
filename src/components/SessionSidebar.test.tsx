@@ -67,9 +67,10 @@ describe("SessionSidebar", () => {
   it("calls onFork when fork button clicked", () => {
     const onFork = vi.fn();
     render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onFork={onFork} />);
+    // Sessions are sorted: WAITING (id "2") first, THINKING (id "1") second
     const forkBtns = screen.getAllByTitle("Fork session");
     fireEvent.click(forkBtns[0]);
-    expect(onFork).toHaveBeenCalledWith("1");
+    expect(onFork).toHaveBeenCalledWith("2"); // "fix-bug-42" is WAITING, sorts first
   });
 
   it("renders without onFork prop (optional)", () => {
