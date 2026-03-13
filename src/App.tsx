@@ -31,10 +31,13 @@ export default function App() {
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
   const waitingCount = sessions.filter((s) => s.status === "WAITING").length;
 
-  // Auto-select first session
+  // Auto-select: pick first session if none selected, or if active session was removed
   useEffect(() => {
-    if (!activeSessionId && sessions.length > 0) {
+    const activeExists = sessions.some((s) => s.id === activeSessionId);
+    if ((!activeSessionId || !activeExists) && sessions.length > 0) {
       setActiveSession(sessions[0].id);
+    } else if (!activeExists && sessions.length === 0) {
+      setActiveSession(null);
     }
   }, [sessions, activeSessionId, setActiveSession]);
 
