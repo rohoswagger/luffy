@@ -85,6 +85,18 @@ export default function App() {
     [setActiveSession],
   );
 
+  const handleClearDone = useCallback(async () => {
+    const doneSessions = sessions.filter((s) => s.status === "DONE");
+    for (const s of doneSessions) {
+      try {
+        await killSession(s.id);
+        removeSession(s.id);
+      } catch {
+        // ignore individual failures
+      }
+    }
+  }, [sessions, removeSession]);
+
   const handleMarkDone = useCallback(async (id: string) => {
     try {
       await invoke("mark_session_done", { sessionId: id });
@@ -237,6 +249,7 @@ export default function App() {
         onFork={handleFork}
         onMarkDone={handleMarkDone}
         onRestart={handleRestart}
+        onClearDone={handleClearDone}
       />
 
       <div

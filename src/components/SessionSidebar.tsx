@@ -14,15 +14,26 @@ interface Props {
   onFork?: (id: string) => void;
   onMarkDone?: (id: string) => void;
   onRestart?: (id: string) => void;
+  onClearDone?: () => void;
 }
 
 const AGENT_ICONS: Record<string, string> = {
   "claude-code": "🤖",
-  "aider": "⚡",
-  "generic": "▸",
+  aider: "⚡",
+  generic: "▸",
 };
 
-export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork, onMarkDone, onRestart }: Props) {
+export function SessionSidebar({
+  sessions,
+  activeId,
+  onSelect,
+  onNewSession,
+  onKill,
+  onFork,
+  onMarkDone,
+  onRestart,
+  onClearDone,
+}: Props) {
   const [now, setNow] = useState(new Date());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -48,42 +59,61 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
   };
 
   const commitNote = (id: string) => {
-    invoke("set_session_note", { sessionId: id, note: noteValue.trim() }).catch(console.error);
+    invoke("set_session_note", { sessionId: id, note: noteValue.trim() }).catch(
+      console.error,
+    );
     setEditingNoteId(null);
   };
 
   const commitRename = (id: string) => {
     const trimmed = renameValue.trim();
     if (trimmed) {
-      invoke("rename_session", { sessionId: id, newName: trimmed }).catch(console.error);
+      invoke("rename_session", { sessionId: id, newName: trimmed }).catch(
+        console.error,
+      );
     }
     setRenamingId(null);
   };
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
   const filteredSessions = filter
-    ? sessions.filter((s) => s.name.toLowerCase().includes(filter.toLowerCase()) || (s.branch && s.branch.toLowerCase().includes(filter.toLowerCase())))
+    ? sessions.filter(
+        (s) =>
+          s.name.toLowerCase().includes(filter.toLowerCase()) ||
+          (s.branch && s.branch.toLowerCase().includes(filter.toLowerCase())),
+      )
     : sessions;
   const sortedSessions = sortSessionsByPriority(filteredSessions);
 
   return (
-    <aside style={{
-      width: 260,
-      background: "var(--bg-secondary)",
-      borderRight: "1px solid var(--border)",
-      display: "flex",
-      flexDirection: "column",
-      height: "100%",
-      flexShrink: 0,
-    }}>
-      <div style={{
-        padding: "12px 16px",
-        borderBottom: "1px solid var(--border)",
+    <aside
+      style={{
+        width: 260,
+        background: "var(--bg-secondary)",
+        borderRight: "1px solid var(--border)",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-      }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", letterSpacing: "0.05em" }}>
+        flexDirection: "column",
+        height: "100%",
+        flexShrink: 0,
+      }}
+    >
+      <div
+        style={{
+          padding: "12px 16px",
+          borderBottom: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: "var(--text-primary)",
+            letterSpacing: "0.05em",
+          }}
+        >
           LUFFY
         </span>
         <button
@@ -108,19 +138,39 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
       </div>
 
       {sessions.length > 0 && (
-        <div style={{ padding: "4px 8px", borderBottom: "1px solid var(--border)" }}>
+        <div
+          style={{
+            padding: "4px 8px",
+            borderBottom: "1px solid var(--border)",
+          }}
+        >
           <input
             placeholder="Filter sessions..."
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            style={{ width: "100%", background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-primary)", padding: "4px 8px", fontSize: 11 }}
+            style={{
+              width: "100%",
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--border)",
+              borderRadius: 4,
+              color: "var(--text-primary)",
+              padding: "4px 8px",
+              fontSize: 11,
+            }}
           />
         </div>
       )}
 
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {sessions.length === 0 && (
-          <div style={{ padding: "16px", color: "var(--text-secondary)", fontSize: 12, textAlign: "center" }}>
+          <div
+            style={{
+              padding: "16px",
+              color: "var(--text-secondary)",
+              fontSize: 12,
+              textAlign: "center",
+            }}
+          >
             No sessions. Press + to start.
           </div>
         )}
@@ -132,16 +182,36 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
             style={{
               padding: "8px 16px",
               cursor: "pointer",
-              background: session.id === activeId ? "var(--bg-tertiary)" : "transparent",
-              borderLeft: session.id === activeId ? "2px solid var(--accent-blue)" : "2px solid transparent",
+              background:
+                session.id === activeId ? "var(--bg-tertiary)" : "transparent",
+              borderLeft:
+                session.id === activeId
+                  ? "2px solid var(--accent-blue)"
+                  : "2px solid transparent",
               display: "flex",
               flexDirection: "column",
               gap: 4,
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
-                <span style={{ fontSize: 12 }}>{AGENT_ICONS[session.agent_type] || "▸"}</span>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                justifyContent: "space-between",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  overflow: "hidden",
+                }}
+              >
+                <span style={{ fontSize: 12 }}>
+                  {AGENT_ICONS[session.agent_type] || "▸"}
+                </span>
                 {renamingId === session.id ? (
                   <input
                     autoFocus
@@ -153,13 +223,27 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                       if (e.key === "Escape") setRenamingId(null);
                     }}
                     onClick={(e) => e.stopPropagation()}
-                    style={{ fontSize: 12, background: "var(--bg-tertiary)", border: "1px solid var(--accent-blue)", borderRadius: 3, color: "var(--text-primary)", padding: "1px 4px", width: 140 }}
+                    style={{
+                      fontSize: 12,
+                      background: "var(--bg-tertiary)",
+                      border: "1px solid var(--accent-blue)",
+                      borderRadius: 3,
+                      color: "var(--text-primary)",
+                      padding: "1px 4px",
+                      width: 140,
+                    }}
                   />
                 ) : (
                   <span
                     onDoubleClick={(e) => startRename(session, e)}
                     title="Double-click to rename"
-                    style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    style={{
+                      fontSize: 13,
+                      color: "var(--text-primary)",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
                   >
                     {session.name}
                   </span>
@@ -167,35 +251,75 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
               </div>
               {onMarkDone && !["DONE", "ERROR"].includes(session.status) && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onMarkDone(session.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMarkDone(session.id);
+                  }}
                   title="Mark as done"
-                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    padding: "0 2px",
+                  }}
                 >
                   ✓
                 </button>
               )}
               {onRestart && session.status === "ERROR" && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onRestart(session.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRestart(session.id);
+                  }}
                   title="Restart session"
-                  style={{ background: "none", border: "none", color: "#fbbf24", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#fbbf24",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    padding: "0 2px",
+                  }}
                 >
                   ↺
                 </button>
               )}
               {onFork && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); onFork(session.id); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onFork(session.id);
+                  }}
                   title="Fork session"
-                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "var(--text-secondary)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    padding: "0 2px",
+                  }}
                 >
                   ⊕
                 </button>
               )}
               <button
-                onClick={(e) => { e.stopPropagation(); onKill(session.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onKill(session.id);
+                }}
                 title="Kill session"
-                style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  padding: "0 2px",
+                }}
               >
                 ✕
               </button>
@@ -212,13 +336,29 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   if (e.key === "Escape") setEditingNoteId(null);
                 }}
                 onClick={(e) => e.stopPropagation()}
-                style={{ fontSize: 10, background: "var(--bg-tertiary)", border: "1px solid var(--accent-blue)", borderRadius: 3, color: "var(--text-primary)", padding: "1px 4px", width: "100%" }}
+                style={{
+                  fontSize: 10,
+                  background: "var(--bg-tertiary)",
+                  border: "1px solid var(--accent-blue)",
+                  borderRadius: 3,
+                  color: "var(--text-primary)",
+                  padding: "1px 4px",
+                  width: "100%",
+                }}
               />
             ) : session.note ? (
               <div
                 title="Edit note"
                 onDoubleClick={(e) => startEditNote(session, e)}
-                style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: "italic", cursor: "text" }}
+                style={{
+                  fontSize: 10,
+                  color: "var(--text-secondary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  fontStyle: "italic",
+                  cursor: "text",
+                }}
               >
                 {session.note}
               </div>
@@ -226,50 +366,101 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
               <div
                 title="Add note (double-click)"
                 onDoubleClick={(e) => startEditNote(session, e)}
-                style={{ fontSize: 10, color: "transparent", height: 14, cursor: "text" }}
+                style={{
+                  fontSize: 10,
+                  color: "transparent",
+                  height: 14,
+                  cursor: "text",
+                }}
               >
                 &nbsp;
               </div>
             )}
             {session.last_output_preview && (
-              <div style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.7 }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  color: "var(--text-secondary)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  opacity: 0.7,
+                }}
+              >
                 {session.last_output_preview}
               </div>
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <StatusBadge status={session.status} />
               {isSessionStuck(session, now) && (
-                <span title="Session may be stuck — no activity for 10+ minutes" style={{ fontSize: 9, color: "#d29922", fontWeight: 700, letterSpacing: "0.05em" }}>
+                <span
+                  title="Session may be stuck — no activity for 10+ minutes"
+                  style={{
+                    fontSize: 9,
+                    color: "#d29922",
+                    fontWeight: 700,
+                    letterSpacing: "0.05em",
+                  }}
+                >
                   STUCK?
                 </span>
               )}
               {session.branch && (
-                <span style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-secondary)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
                   {session.branch}
                 </span>
               )}
               {session.total_cost_usd > 0 && (
-                <span style={{
-                  fontSize: 10,
-                  marginLeft: "auto",
-                  flexShrink: 0,
-                  color: session.cost_budget_usd > 0
-                    ? session.total_cost_usd >= session.cost_budget_usd
-                      ? "#f87171"
-                      : session.total_cost_usd >= session.cost_budget_usd * 0.8
-                        ? "#fbbf24"
-                        : "#4ade80"
-                    : "#4ade80",
-                }}>
-                  ${session.total_cost_usd.toFixed(2)}{session.cost_budget_usd > 0 ? `/$${session.cost_budget_usd.toFixed(2)}` : ""}
+                <span
+                  style={{
+                    fontSize: 10,
+                    marginLeft: "auto",
+                    flexShrink: 0,
+                    color:
+                      session.cost_budget_usd > 0
+                        ? session.total_cost_usd >= session.cost_budget_usd
+                          ? "#f87171"
+                          : session.total_cost_usd >=
+                              session.cost_budget_usd * 0.8
+                            ? "#fbbf24"
+                            : "#4ade80"
+                        : "#4ade80",
+                  }}
+                >
+                  ${session.total_cost_usd.toFixed(2)}
+                  {session.cost_budget_usd > 0
+                    ? `/$${session.cost_budget_usd.toFixed(2)}`
+                    : ""}
                 </span>
               )}
-              {["THINKING", "WAITING"].includes(session.status) && session.created_at ? (
-                <span title={`Running since ${new Date(session.created_at).toLocaleTimeString()}`} style={{ fontSize: 10, color: "var(--text-secondary)", flexShrink: 0 }}>
+              {["THINKING", "WAITING"].includes(session.status) &&
+              session.created_at ? (
+                <span
+                  title={`Running since ${new Date(session.created_at).toLocaleTimeString()}`}
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-secondary)",
+                    flexShrink: 0,
+                  }}
+                >
                   {formatDuration(session.created_at, now)}
                 </span>
               ) : session.last_activity ? (
-                <span style={{ fontSize: 10, color: "var(--text-secondary)", flexShrink: 0 }}>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: "var(--text-secondary)",
+                    flexShrink: 0,
+                  }}
+                >
                   {formatRelativeTime(session.last_activity, now)}
                 </span>
               ) : null}
@@ -278,11 +469,44 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
         ))}
       </div>
 
-      <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", fontSize: 10, color: "var(--text-secondary)", display: "flex", justifyContent: "space-between" }}>
-        <span>{sessions.length} session{sessions.length !== 1 ? "s" : ""}</span>
-        {totalCost > 0 && (
-          <span style={{ color: "#4ade80" }}>total ${totalCost.toFixed(2)}</span>
-        )}
+      <div
+        style={{
+          padding: "8px 16px",
+          borderTop: "1px solid var(--border)",
+          fontSize: 10,
+          color: "var(--text-secondary)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span>
+          {sessions.length} session{sessions.length !== 1 ? "s" : ""}
+        </span>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          {sessions.some((s) => s.status === "DONE") && (
+            <button
+              title="Clear done sessions"
+              onClick={() => onClearDone?.()}
+              style={{
+                background: "none",
+                border: "1px solid var(--border)",
+                borderRadius: 3,
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                padding: "1px 6px",
+                fontSize: 10,
+              }}
+            >
+              × done
+            </button>
+          )}
+          {totalCost > 0 && (
+            <span style={{ color: "#4ade80" }}>
+              total ${totalCost.toFixed(2)}
+            </span>
+          )}
+        </div>
       </div>
     </aside>
   );
