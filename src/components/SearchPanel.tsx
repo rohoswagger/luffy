@@ -30,7 +30,11 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
   }, [open]);
 
   const runSearch = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults([]); setSearched(false); return; }
+    if (!q.trim()) {
+      setResults([]);
+      setSearched(false);
+      return;
+    }
     const res = await invoke<SearchResult[]>("search_output", { query: q });
     setResults(res);
     setSearched(true);
@@ -55,52 +59,145 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
 
   return (
     <div
-      style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 200, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 100 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.5)",
+        zIndex: 200,
+        display: "flex",
+        alignItems: "flex-start",
+        justifyContent: "center",
+        paddingTop: 100,
+      }}
       onClick={onClose}
     >
       <div
-        style={{ width: 620, background: "var(--bg-secondary)", border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden", boxShadow: "0 24px 48px rgba(0,0,0,0.4)", maxHeight: "70vh", display: "flex", flexDirection: "column" }}
+        style={{
+          width: 620,
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          overflow: "hidden",
+          boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
+          maxHeight: "70vh",
+          display: "flex",
+          flexDirection: "column",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
-        <div style={{ display: "flex", alignItems: "center", padding: "10px 14px", borderBottom: "1px solid var(--border)", gap: 8, flexShrink: 0 }}>
-          <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>⌕</span>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "10px 14px",
+            borderBottom: "1px solid var(--border)",
+            gap: 8,
+            flexShrink: 0,
+          }}
+        >
+          <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>
+            ⌕
+          </span>
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search output across all sessions…"
-            style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "var(--text-primary)", fontSize: 14, fontFamily: "inherit" }}
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              color: "var(--text-primary)",
+              fontSize: 14,
+              fontFamily: "inherit",
+            }}
           />
           {results.length > 0 && (
-            <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>{results.length} match{results.length !== 1 ? "es" : ""}</span>
+            <span style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+              {results.length} match{results.length !== 1 ? "es" : ""}
+            </span>
           )}
-          <span style={{ fontSize: 10, color: "var(--text-secondary)", border: "1px solid var(--border)", borderRadius: 3, padding: "2px 5px" }}>ESC</span>
+          <span
+            style={{
+              fontSize: 10,
+              color: "var(--text-secondary)",
+              border: "1px solid var(--border)",
+              borderRadius: 3,
+              padding: "2px 5px",
+            }}
+          >
+            ESC
+          </span>
         </div>
 
         {/* Results */}
         <div style={{ overflowY: "auto", flex: 1 }}>
           {searched && results.length === 0 ? (
-            <div style={{ padding: "24px 16px", color: "var(--text-secondary)", fontSize: 12, textAlign: "center" }}>
+            <div
+              style={{
+                padding: "24px 16px",
+                color: "var(--text-secondary)",
+                fontSize: 12,
+                textAlign: "center",
+              }}
+            >
               No matches for "{query}"
             </div>
           ) : (
             Object.entries(grouped).map(([sessionId, rows]) => (
               <div key={sessionId}>
-                <div style={{ padding: "6px 14px", background: "var(--bg-primary)", fontSize: 11, color: "var(--text-secondary)", fontWeight: 600, letterSpacing: "0.05em", borderBottom: "1px solid var(--border)" }}>
+                <div
+                  style={{
+                    padding: "6px 14px",
+                    background: "var(--bg-primary)",
+                    fontSize: 11,
+                    color: "var(--text-secondary)",
+                    fontWeight: 600,
+                    letterSpacing: "0.05em",
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                >
                   {rows[0].session_name}
                 </div>
                 {rows.map((r) => (
                   <div
                     key={`${r.session_id}-${r.line_number}`}
-                    onClick={() => { onNavigate(r.session_id); onClose(); }}
-                    style={{ padding: "8px 14px", cursor: "pointer", borderBottom: "1px solid var(--border)", display: "flex", gap: 10, alignItems: "baseline" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-tertiary)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    className="search-result-item"
+                    onClick={() => {
+                      onNavigate(r.session_id);
+                      onClose();
+                    }}
+                    style={{
+                      padding: "8px 14px",
+                      borderBottom: "1px solid var(--border)",
+                      display: "flex",
+                      gap: 10,
+                      alignItems: "baseline",
+                    }}
                   >
-                    <span style={{ fontSize: 10, color: "var(--text-secondary)", minWidth: 40, textAlign: "right" }}>:{r.line_number}</span>
-                    <span style={{ fontSize: 12, color: "var(--text-primary)", fontFamily: "monospace", whiteSpace: "pre", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: "var(--text-secondary)",
+                        minWidth: 40,
+                        textAlign: "right",
+                      }}
+                    >
+                      :{r.line_number}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        color: "var(--text-primary)",
+                        fontFamily: "monospace",
+                        whiteSpace: "pre",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
                       {r.excerpt}
                     </span>
                   </div>
