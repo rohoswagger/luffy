@@ -17,6 +17,9 @@ const mockSession = {
   worktree_path: null,
   branch: null,
   total_cost_usd: 0,
+  cost_budget_usd: 0,
+  note: null,
+  last_output_preview: "",
 };
 
 describe("session store", () => {

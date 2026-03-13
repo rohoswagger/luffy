@@ -20,7 +20,8 @@ vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue(undef
 const makeSession = (id: string, name: string): SessionData => ({
   id, name, tmux_session: `luffy-${id}`, status: "IDLE",
   agent_type: "claude-code", worktree_path: null, branch: null,
-  created_at: "", last_activity: "", total_cost_usd: 0,
+  created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0,
+  note: null, last_output_preview: "",
 });
 
 describe("PaneGrid", () => {

@@ -4,9 +4,9 @@ import { CommandPalette } from "./CommandPalette";
 import type { SessionData } from "../store/sessions";
 
 const sessions: SessionData[] = [
-  { id: "1", name: "feature-auth", tmux_session: "luffy-1", status: "THINKING", agent_type: "claude-code", branch: "feat/auth", worktree_path: null, created_at: "", last_activity: "", total_cost_usd: 0 },
-  { id: "2", name: "fix-bug-42", tmux_session: "luffy-2", status: "WAITING", agent_type: "aider", branch: "fix/42", worktree_path: null, created_at: "", last_activity: "", total_cost_usd: 0 },
-  { id: "3", name: "refactor-db", tmux_session: "luffy-3", status: "IDLE", agent_type: "generic", branch: null, worktree_path: null, created_at: "", last_activity: "", total_cost_usd: 0 },
+  { id: "1", name: "feature-auth", tmux_session: "luffy-1", status: "THINKING", agent_type: "claude-code", branch: "feat/auth", worktree_path: null, created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0, note: null, last_output_preview: "" },
+  { id: "2", name: "fix-bug-42", tmux_session: "luffy-2", status: "WAITING", agent_type: "aider", branch: "fix/42", worktree_path: null, created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0, note: null, last_output_preview: "" },
+  { id: "3", name: "refactor-db", tmux_session: "luffy-3", status: "IDLE", agent_type: "generic", branch: null, worktree_path: null, created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0, note: null, last_output_preview: "" },
 ];
 
 describe("CommandPalette", () => {
