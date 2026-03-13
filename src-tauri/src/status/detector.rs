@@ -33,7 +33,14 @@ fn is_thinking(output: &str) -> bool {
 fn is_waiting_for_input(output: &str) -> bool {
     use std::sync::OnceLock;
     static RE: OnceLock<Regex> = OnceLock::new();
-    let re = RE.get_or_init(|| Regex::new(r"(?m)(^\s*>\s*$|❯\s*$|>\s*$|\?\s*$)").unwrap());
+    // Match agent-specific waiting patterns (narrow enough to avoid false positives):
+    //   ^\s*>\s*$  - line containing only "> " (interactive Python/node prompt)
+    //   ❯\s*$      - zsh right-arrow prompt at end of line
+    //   \?\s*[YyNn]\s*\]  - [Y/n] confirmation prompts
+    //   Press.*to\s  - "Press Enter to continue" style
+    let re = RE.get_or_init(|| {
+        Regex::new(r"(?m)(^\s*>\s*$|❯\s*$|\[[Yy]/[Nn]\]|\[[Nn]/[Yy]\]|Press .{1,30} to\s)").unwrap()
+    });
     re.is_match(output)
 }
 
@@ -62,9 +69,22 @@ mod tests {
     }
 
     #[test]
-    fn detects_waiting_prompt() {
+    fn detects_waiting_interactive_prompt() {
         let output = "Please provide a filename:\n> ";
         assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
+    }
+
+    #[test]
+    fn detects_waiting_yn_prompt() {
+        let output = "Overwrite file? [Y/n] ";
+        assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
+    }
+
+    #[test]
+    fn does_not_false_positive_on_gt_in_output() {
+        // Lines ending with > in normal code output should not trigger WAITING
+        let output = "fn foo() -> bool {\n  x > y\n}";
+        assert_eq!(detect_status(output), None);
     }
 
     #[test]
