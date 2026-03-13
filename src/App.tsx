@@ -6,6 +6,7 @@ import type { Layout } from "./components/PaneGrid";
 import { BroadcastBar } from "./components/BroadcastBar";
 import { LayoutSwitcher } from "./components/LayoutSwitcher";
 import { NewSessionModal } from "./components/NewSessionModal";
+import { CommandPalette } from "./components/CommandPalette";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
@@ -14,6 +15,7 @@ export default function App() {
 
   const { sessions, activeSessionId, setActiveSession, removeSession } = useSessionStore();
   const [showNewModal, setShowNewModal] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
@@ -54,6 +56,7 @@ export default function App() {
       const meta = e.metaKey || e.ctrlKey;
 
       if (meta && e.key === "n") { e.preventDefault(); setShowNewModal(true); return; }
+      if (meta && e.key === "k") { e.preventDefault(); setShowPalette(true); return; }
 
       if (meta && /^[1-9]$/.test(e.key)) {
         e.preventDefault();
@@ -165,6 +168,12 @@ export default function App() {
       </div>
 
       <NewSessionModal open={showNewModal} onClose={() => setShowNewModal(false)} onCreate={handleCreate} />
+      <CommandPalette
+        open={showPalette}
+        sessions={sessions}
+        onSelect={(id) => { setActiveSession(id); setShowPalette(false); }}
+        onClose={() => setShowPalette(false)}
+      />
     </div>
   );
 }
