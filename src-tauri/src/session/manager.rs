@@ -64,6 +64,7 @@ impl SessionManager {
                 },
                 working_dir: s.worktree_path.clone(),
                 note: s.note.clone(),
+                cost_budget_usd: s.cost_budget_usd,
             })
             .collect();
         let _ = crate::session_meta::save_meta(&sessions);
@@ -186,6 +187,7 @@ impl SessionManager {
                 }).unwrap_or(AgentType::Generic);
                 let working_dir = meta.and_then(|m| m.working_dir.clone());
                 let note = meta.and_then(|m| m.note.clone());
+                let cost_budget_usd = meta.map(|m| m.cost_budget_usd).unwrap_or(0.0);
                 let (branch, worktree) = working_dir.as_deref()
                     .map(crate::git::detect_git_info)
                     .unwrap_or((None, None));
@@ -201,7 +203,7 @@ impl SessionManager {
                     branch,
                     agent_type,
                     total_cost_usd: 0.0,
-                    cost_budget_usd: 0.0,
+                    cost_budget_usd,
                     note,
                     last_output_preview: String::new(),
                     events: vec![SessionEvent::created()],

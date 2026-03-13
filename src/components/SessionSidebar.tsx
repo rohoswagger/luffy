@@ -229,8 +229,19 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                 </span>
               )}
               {session.total_cost_usd > 0 && (
-                <span style={{ fontSize: 10, color: "#4ade80", marginLeft: "auto", flexShrink: 0 }}>
-                  ${session.total_cost_usd.toFixed(2)}
+                <span style={{
+                  fontSize: 10,
+                  marginLeft: "auto",
+                  flexShrink: 0,
+                  color: session.cost_budget_usd > 0
+                    ? session.total_cost_usd >= session.cost_budget_usd
+                      ? "#f87171"
+                      : session.total_cost_usd >= session.cost_budget_usd * 0.8
+                        ? "#fbbf24"
+                        : "#4ade80"
+                    : "#4ade80",
+                }}>
+                  ${session.total_cost_usd.toFixed(2)}{session.cost_budget_usd > 0 ? `/$${session.cost_budget_usd.toFixed(2)}` : ""}
                 </span>
               )}
               {session.last_activity && (
