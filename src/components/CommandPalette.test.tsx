@@ -54,10 +54,31 @@ describe("CommandPalette", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("selects first result on Enter", () => {
+  it("selects first result (by priority) on Enter with no navigation", () => {
     const onSelect = vi.fn();
     render(<CommandPalette open sessions={sessions} onSelect={onSelect} onClose={vi.fn()} />);
     fireEvent.keyDown(screen.getByPlaceholderText(/search sessions/i), { key: "Enter" });
+    // WAITING (id "2") sorts first by priority
+    expect(onSelect).toHaveBeenCalledWith("2");
+  });
+
+  it("navigates down with ArrowDown and selects with Enter", () => {
+    const onSelect = vi.fn();
+    render(<CommandPalette open sessions={sessions} onSelect={onSelect} onClose={vi.fn()} />);
+    const input = screen.getByPlaceholderText(/search sessions/i);
+    fireEvent.keyDown(input, { key: "ArrowDown" }); // move to index 1
+    fireEvent.keyDown(input, { key: "Enter" });
+    // After ArrowDown from idx 0, idx is 1 (THINKING session, id "1")
     expect(onSelect).toHaveBeenCalledWith("1");
+  });
+
+  it("ArrowUp wraps from top to bottom", () => {
+    const onSelect = vi.fn();
+    render(<CommandPalette open sessions={sessions} onSelect={onSelect} onClose={vi.fn()} />);
+    const input = screen.getByPlaceholderText(/search sessions/i);
+    fireEvent.keyDown(input, { key: "ArrowUp" }); // wraps to last
+    fireEvent.keyDown(input, { key: "Enter" });
+    // Wraps to index 2 (IDLE session, id "3")
+    expect(onSelect).toHaveBeenCalledWith("3");
   });
 });

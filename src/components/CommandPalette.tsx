@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
+import { sortSessionsByPriority } from "../utils/sessions";
 
 interface Props {
   open: boolean;
@@ -26,23 +27,38 @@ function fuzzyMatch(query: string, session: SessionData): boolean {
 
 export function CommandPalette({ open, sessions, onSelect, onClose }: Props) {
   const [query, setQuery] = useState("");
+  const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = sessions.filter((s) => fuzzyMatch(query, s));
+  const filtered = sortSessionsByPriority(sessions.filter((s) => fuzzyMatch(query, s)));
 
   useEffect(() => {
     if (open) {
       setQuery("");
+      setSelectedIdx(0);
       setTimeout(() => inputRef.current?.focus(), 10);
     }
   }, [open]);
+
+  // Reset selection when filter changes
+  useEffect(() => { setSelectedIdx(0); }, [query]);
 
   if (!open) return null;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { onClose(); return; }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIdx((i) => (i + 1) % Math.max(filtered.length, 1));
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIdx((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
+      return;
+    }
     if (e.key === "Enter" && filtered.length > 0) {
-      onSelect(filtered[0].id);
+      onSelect(filtered[selectedIdx]?.id ?? filtered[0].id);
       onClose();
     }
   };
@@ -84,14 +100,13 @@ export function CommandPalette({ open, sessions, onSelect, onClose }: Props) {
                 style={{
                   padding: "10px 14px",
                   cursor: "pointer",
-                  background: idx === 0 ? "var(--bg-tertiary)" : "transparent",
+                  background: idx === selectedIdx ? "var(--bg-tertiary)" : "transparent",
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
                   borderBottom: "1px solid var(--border)",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--bg-tertiary)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = idx === 0 ? "var(--bg-tertiary)" : "transparent")}
+                onMouseEnter={() => setSelectedIdx(idx)}
               >
                 <span style={{ fontSize: 14 }}>{AGENT_ICONS[session.agent_type]}</span>
                 <div style={{ flex: 1, overflow: "hidden" }}>
