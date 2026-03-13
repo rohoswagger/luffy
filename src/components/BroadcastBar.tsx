@@ -14,18 +14,51 @@ export function BroadcastBar({
   onBroadcastWaiting,
 }: Props) {
   const [value, setValue] = useState("");
+  const [collapsed, setCollapsed] = useState(true);
 
   const submit = () => {
     if (!value.trim()) return;
     onBroadcast(value);
     setValue("");
+    setCollapsed(true);
   };
 
   const submitWaiting = () => {
     if (!value.trim() || !onBroadcastWaiting) return;
     onBroadcastWaiting(value);
     setValue("");
+    setCollapsed(true);
   };
+
+  if (collapsed) {
+    return (
+      <div
+        style={{
+          height: 28,
+          background: "var(--bg-2)",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          padding: "0 12px",
+          flexShrink: 0,
+          cursor: "pointer",
+        }}
+        onClick={() => setCollapsed(false)}
+      >
+        <span
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "var(--purple)",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            whiteSpace: "nowrap",
+          }}
+        >
+          ⬡ BROADCAST ({sessionCount})
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -47,7 +80,9 @@ export function BroadcastBar({
           fontWeight: 700,
           letterSpacing: "0.06em",
           whiteSpace: "nowrap",
+          cursor: "pointer",
         }}
+        onClick={() => setCollapsed(true)}
       >
         ⬡ BROADCAST
       </span>
@@ -70,6 +105,10 @@ export function BroadcastBar({
           if (e.key === "Enter") {
             e.preventDefault();
             submit();
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setCollapsed(true);
           }
         }}
         placeholder="Broadcast to all sessions… (Enter)"
