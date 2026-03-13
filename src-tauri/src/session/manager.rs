@@ -42,9 +42,30 @@ impl SessionManager {
             return Err(anyhow!("tmux new-session failed: {}", stderr));
         }
 
-        let mut sessions = self.sessions.lock().unwrap();
-        sessions.insert(session.id.clone(), session.clone());
+        {
+            let mut sessions = self.sessions.lock().unwrap();
+            sessions.insert(session.id.clone(), session.clone());
+        }
+        self.persist_meta();
         Ok(session)
+    }
+
+    /// Save current session metadata to disk for persistence across restarts.
+    fn persist_meta(&self) {
+        let sessions: Vec<crate::session_meta::SessionMeta> = self.sessions.lock().unwrap()
+            .values()
+            .map(|s| crate::session_meta::SessionMeta {
+                tmux_session: s.tmux_session.clone(),
+                name: s.name.clone(),
+                agent_type: match s.agent_type {
+                    AgentType::ClaudeCode => "claude-code".to_string(),
+                    AgentType::Aider => "aider".to_string(),
+                    AgentType::Generic => "generic".to_string(),
+                },
+                working_dir: s.worktree_path.clone(),
+            })
+            .collect();
+        let _ = crate::session_meta::save_meta(&sessions);
     }
 
     /// Kill a tmux session by session ID.
@@ -66,6 +87,7 @@ impl SessionManager {
         }
 
         self.sessions.lock().unwrap().remove(session_id);
+        self.persist_meta();
         Ok(())
     }
 
@@ -113,6 +135,7 @@ impl SessionManager {
     }
 
     /// Load existing luffy-managed tmux sessions (for app restart persistence).
+    /// Uses persisted metadata to restore agent type and other config.
     pub fn restore_from_tmux(&self) -> Result<Vec<Session>> {
         let output = Command::new("tmux")
             .args(["list-sessions", "-F", "#{session_name}"])
@@ -127,6 +150,13 @@ impl SessionManager {
             return Ok(vec![]);
         }
 
+        // Load persisted metadata for agent type lookup
+        let meta_map: std::collections::HashMap<String, crate::session_meta::SessionMeta> =
+            crate::session_meta::load_meta()
+                .into_iter()
+                .map(|m| (m.tmux_session.clone(), m))
+                .collect();
+
         let names = String::from_utf8_lossy(&output.stdout);
         let mut restored = vec![];
         let mut sessions = self.sessions.lock().unwrap();
@@ -134,7 +164,19 @@ impl SessionManager {
         for line in names.lines() {
             let name = line.trim();
             if name.starts_with("luffy-") {
-                let display_name = name.strip_prefix("luffy-").unwrap_or(name);
+                let meta = meta_map.get(name);
+                let display_name = meta.map(|m| m.name.as_str())
+                    .unwrap_or_else(|| name.strip_prefix("luffy-").unwrap_or(name));
+                let agent_type = meta.map(|m| match m.agent_type.as_str() {
+                    "claude-code" => AgentType::ClaudeCode,
+                    "aider" => AgentType::Aider,
+                    _ => AgentType::Generic,
+                }).unwrap_or(AgentType::Generic);
+                let working_dir = meta.and_then(|m| m.working_dir.clone());
+                let (branch, worktree) = working_dir.as_deref()
+                    .map(crate::git::detect_git_info)
+                    .unwrap_or((None, None));
+
                 let session = Session {
                     id: uuid::Uuid::new_v4().to_string(),
                     name: display_name.to_string(),
@@ -142,9 +184,9 @@ impl SessionManager {
                     created_at: chrono::Utc::now(),
                     status: AgentStatus::Idle,
                     last_activity: chrono::Utc::now(),
-                    worktree_path: None,
-                    branch: None,
-                    agent_type: AgentType::Generic,
+                    worktree_path: worktree,
+                    branch,
+                    agent_type,
                     total_cost_usd: 0.0,
                     events: vec![SessionEvent::created()],
                 };
@@ -158,13 +200,17 @@ impl SessionManager {
 
     /// Rename a session (display name only, tmux session name unchanged).
     pub fn rename_session(&self, session_id: &str, new_name: &str) -> bool {
-        let mut sessions = self.sessions.lock().unwrap();
-        if let Some(s) = sessions.get_mut(session_id) {
-            s.name = new_name.trim().to_string();
-            true
-        } else {
-            false
-        }
+        let renamed = {
+            let mut sessions = self.sessions.lock().unwrap();
+            if let Some(s) = sessions.get_mut(session_id) {
+                s.name = new_name.trim().to_string();
+                true
+            } else {
+                false
+            }
+        };
+        if renamed { self.persist_meta(); }
+        renamed
     }
 
     /// Remove a session from the registry without killing the tmux session.

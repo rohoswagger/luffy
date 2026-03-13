@@ -5,6 +5,7 @@ pub mod pty_stream;
 pub mod git;
 pub mod templates;
 pub mod cost;
+pub mod session_meta;
 
 use session::SessionManager;
 use pty_stream::PtyManager;
