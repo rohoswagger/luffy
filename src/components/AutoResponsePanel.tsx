@@ -33,13 +33,17 @@ export function AutoResponsePanel({ open, onClose }: Props) {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPattern.trim()) return;
-    const updated = await invoke<AutoResponse[]>("add_auto_response", {
-      pattern: newPattern.trim(),
-      response: newResponse,
-    });
-    setPatterns(updated);
-    setNewPattern("");
-    setNewResponse("");
+    try {
+      const updated = await invoke<AutoResponse[]>("add_auto_response", {
+        pattern: newPattern.trim(),
+        response: newResponse,
+      });
+      setPatterns(updated);
+      setNewPattern("");
+      setNewResponse("");
+    } catch (err) {
+      console.error("Failed to add auto-response:", err);
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -229,14 +233,16 @@ export function AutoResponsePanel({ open, onClose }: Props) {
           <button
             type="submit"
             aria-label="add"
+            disabled={!newPattern.trim()}
             style={{
               ...inputStyle,
               background: "var(--accent-blue)",
               border: "none",
               color: "var(--color-paper)",
               fontWeight: 600,
-              cursor: "pointer",
+              cursor: newPattern.trim() ? "pointer" : "default",
               flexShrink: 0,
+              opacity: newPattern.trim() ? 1 : 0.4,
             }}
           >
             Add

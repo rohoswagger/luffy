@@ -76,6 +76,24 @@ describe("AutoResponsePanel", () => {
     );
   });
 
+  it("disables Add button when pattern is empty", async () => {
+    mockInvoke.mockResolvedValue([]);
+    render(<AutoResponsePanel open onClose={vi.fn()} />);
+    await waitFor(() => screen.getByPlaceholderText(/pattern/i));
+    const addBtn = screen.getByRole("button", { name: /add/i });
+    expect(addBtn).toBeDisabled();
+  });
+
+  it("enables Add button when pattern has text", async () => {
+    mockInvoke.mockResolvedValue([]);
+    render(<AutoResponsePanel open onClose={vi.fn()} />);
+    await waitFor(() => screen.getByPlaceholderText(/pattern/i));
+    fireEvent.change(screen.getByPlaceholderText(/pattern/i), {
+      target: { value: "test" },
+    });
+    expect(screen.getByRole("button", { name: /add/i })).not.toBeDisabled();
+  });
+
   it("calls toggle_auto_response when checkbox changed", async () => {
     mockInvoke
       .mockResolvedValueOnce(mockPatterns)
