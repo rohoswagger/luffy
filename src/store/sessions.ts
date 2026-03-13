@@ -5,7 +5,7 @@ export interface SessionData {
   name: string;
   tmux_session: string;
   status: "THINKING" | "WAITING" | "IDLE" | "ERROR" | "DONE";
-  agent_type: "claude-code" | "aider" | "generic";
+  agent_type: "claude-code" | "codex" | "aider" | "generic";
   worktree_path: string | null;
   branch: string | null;
   created_at: string;

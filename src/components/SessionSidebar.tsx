@@ -10,6 +10,7 @@ import logoSrc from "../assets/logo.png";
 const AGENT_ICONS: Record<string, string> = {
   ...BASE_AGENT_ICONS,
   "claude-code": "◆",
+  codex: "◈",
 };
 
 interface Props {

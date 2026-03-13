@@ -33,6 +33,7 @@ impl std::fmt::Display for AgentStatus {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AgentType {
     ClaudeCode,
+    Codex,
     Aider,
     Generic,
 }
@@ -99,5 +100,12 @@ mod tests {
         assert_eq!(AgentStatus::Thinking.to_string(), "THINKING");
         assert_eq!(AgentStatus::WaitingForInput.to_string(), "WAITING");
         assert_eq!(AgentStatus::Error.to_string(), "ERROR");
+    }
+
+    #[test]
+    fn codex_agent_type_exists() {
+        let s = Session::new("codex-test", AgentType::Codex);
+        assert_eq!(s.agent_type, AgentType::Codex);
+        assert_eq!(s.name, "codex-test");
     }
 }

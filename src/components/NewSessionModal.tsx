@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 const DEFAULT_COMMANDS: Record<string, string> = {
   "claude-code": "claude",
+  codex: "codex",
   aider: "aider",
   generic: "",
 };
@@ -117,6 +118,7 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
               onChange={(e) => setAgentType(e.target.value)}
             >
               <option value="claude-code">◆ Claude Code</option>
+              <option value="codex">🧬 Codex</option>
               <option value="aider">⚡ Aider</option>
               <option value="generic">▸ Generic</option>
             </select>

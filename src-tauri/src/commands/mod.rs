@@ -43,6 +43,7 @@ impl From<Session> for SessionDto {
             status: s.status.to_string(),
             agent_type: match s.agent_type {
                 AgentType::ClaudeCode => "claude-code".to_string(),
+                AgentType::Codex => "codex".to_string(),
                 AgentType::Aider => "aider".to_string(),
                 AgentType::Generic => "generic".to_string(),
             },
@@ -62,6 +63,7 @@ impl From<Session> for SessionDto {
 fn parse_agent_type(s: &str) -> AgentType {
     match s {
         "claude-code" => AgentType::ClaudeCode,
+        "codex" => AgentType::Codex,
         "aider" => AgentType::Aider,
         _ => AgentType::Generic,
     }

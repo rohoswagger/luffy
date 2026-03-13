@@ -84,6 +84,7 @@ impl SessionManager {
                 name: s.name.clone(),
                 agent_type: match s.agent_type {
                     AgentType::ClaudeCode => "claude-code".to_string(),
+                    AgentType::Codex => "codex".to_string(),
                     AgentType::Aider => "aider".to_string(),
                     AgentType::Generic => "generic".to_string(),
                 },
@@ -214,6 +215,7 @@ impl SessionManager {
                 let agent_type = meta
                     .map(|m| match m.agent_type.as_str() {
                         "claude-code" => AgentType::ClaudeCode,
+                        "codex" => AgentType::Codex,
                         "aider" => AgentType::Aider,
                         _ => AgentType::Generic,
                     })
