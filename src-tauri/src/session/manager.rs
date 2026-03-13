@@ -191,6 +191,7 @@ impl SessionManager {
                     agent_type,
                     total_cost_usd: 0.0,
                     note,
+                    last_output_preview: String::new(),
                     events: vec![SessionEvent::created()],
                 };
                 sessions.insert(session.id.clone(), session.clone());
@@ -277,6 +278,30 @@ impl SessionManager {
         }
         dead
     }
+
+    /// Update the last output preview for a session (ANSI-stripped last meaningful line).
+    pub fn update_output_preview(&self, session_id: &str, raw_chunk: &str) {
+        let preview = extract_preview(raw_chunk);
+        if preview.is_empty() { return; }
+        let mut sessions = self.sessions.lock().unwrap();
+        if let Some(s) = sessions.get_mut(session_id) {
+            s.last_output_preview = preview;
+        }
+    }
+}
+
+/// Strip ANSI escape codes and return the last non-empty line, truncated to 80 chars.
+pub fn extract_preview(raw: &str) -> String {
+    // Remove ANSI escape sequences: ESC [ ... m and other control sequences
+    let ansi_re = regex::Regex::new(r"\x1b\[[0-9;]*[a-zA-Z]|\x1b[()][AB012]|\r").unwrap();
+    let clean = ansi_re.replace_all(raw, "");
+    clean.lines()
+        .map(|l| l.trim())
+        .filter(|l| !l.is_empty())
+        .last()
+        .map(|l| if l.len() > 80 { &l[..80] } else { l })
+        .unwrap_or("")
+        .to_string()
 }
 
 #[cfg(test)]
@@ -465,6 +490,35 @@ mod tests {
         assert_eq!(dead[0], dead_id);
         assert_eq!(mgr.get_session(&alive_id).unwrap().status, AgentStatus::WaitingForInput);
         assert_eq!(mgr.get_session(&dead_id).unwrap().status, AgentStatus::Error);
+    }
+
+    #[test]
+    fn extract_preview_strips_ansi_and_returns_last_nonempty_line() {
+        let raw = "\x1b[32mAll tests passed!\x1b[0m\n\n";
+        assert_eq!(extract_preview(raw), "All tests passed!");
+    }
+
+    #[test]
+    fn extract_preview_returns_empty_for_blank_output() {
+        assert_eq!(extract_preview("\n\n  \n"), "");
+    }
+
+    #[test]
+    fn extract_preview_truncates_long_lines() {
+        let long_line = "x".repeat(120);
+        let preview = extract_preview(&long_line);
+        assert!(preview.len() <= 80);
+    }
+
+    #[test]
+    fn update_output_preview_stores_last_meaningful_line() {
+        let mgr = SessionManager::new();
+        let s = Session::new("my-session", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        mgr.update_output_preview(&id, "\x1b[1mRunning tests...\x1b[0m\n");
+        assert_eq!(mgr.get_session(&id).unwrap().last_output_preview, "Running tests...");
     }
 
     #[test]

@@ -211,6 +211,11 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                 &nbsp;
               </div>
             )}
+            {session.last_output_preview && (
+              <div style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", opacity: 0.7 }}>
+                {session.last_output_preview}
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <StatusBadge status={session.status} />
               {isSessionStuck(session, now) && (

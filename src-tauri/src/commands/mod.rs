@@ -25,6 +25,7 @@ pub struct SessionDto {
     pub last_activity: String,
     pub total_cost_usd: f64,
     pub note: Option<String>,
+    pub last_output_preview: String,
 }
 
 impl From<Session> for SessionDto {
@@ -45,6 +46,7 @@ impl From<Session> for SessionDto {
             last_activity: s.last_activity.to_rfc3339(),
             total_cost_usd: s.total_cost_usd,
             note: s.note,
+            last_output_preview: s.last_output_preview,
         }
     }
 }
@@ -69,6 +71,7 @@ fn attach_pty(
     let app_clone = app.clone();
 
     pty_mgr.attach(session_id, tmux_name, move |chunk| {
+        session_mgr.update_output_preview(&sid, &chunk);
         if let Some(new_status) = crate::status::detect_status(&chunk) {
             let prev = session_mgr.get_session(&sid).map(|s| s.status.clone());
             session_mgr.update_status(&sid, new_status.clone());

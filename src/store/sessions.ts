@@ -12,6 +12,7 @@ export interface SessionData {
   last_activity: string;
   total_cost_usd: number;
   note: string | null;
+  last_output_preview: string;
 }
 
 interface SessionStore {
