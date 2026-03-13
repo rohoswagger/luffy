@@ -224,34 +224,22 @@ pub fn run() {
                     // Batch-done notification: fire when all active sessions finish.
                     // Only triggers if there were THINKING/WAITING sessions last tick.
                     {
-                        let active_count = all_sessions
-                            .iter()
-                            .filter(|s| {
-                                matches!(
-                                    s.status,
-                                    session::AgentStatus::Thinking
-                                        | session::AgentStatus::WaitingForInput
-                                )
-                            })
-                            .count();
-                        if had_active_sessions && active_count == 0 && !all_sessions.is_empty() {
-                            let done = all_sessions
-                                .iter()
-                                .filter(|s| matches!(s.status, session::AgentStatus::Done))
-                                .count();
-                            let errors = all_sessions
-                                .iter()
-                                .filter(|s| matches!(s.status, session::AgentStatus::Error))
-                                .count();
-                            let idle = all_sessions
-                                .iter()
-                                .filter(|s| matches!(s.status, session::AgentStatus::Idle))
-                                .count();
+                        let (mut active, mut done, mut errors, mut idle) = (0, 0, 0, 0);
+                        for s in &all_sessions {
+                            match s.status {
+                                session::AgentStatus::Thinking
+                                | session::AgentStatus::WaitingForInput => active += 1,
+                                session::AgentStatus::Done => done += 1,
+                                session::AgentStatus::Error => errors += 1,
+                                session::AgentStatus::Idle => idle += 1,
+                            }
+                        }
+                        if had_active_sessions && active == 0 && !all_sessions.is_empty() {
                             let summary =
                                 format!("{} done, {} failed, {} idle", done, errors, idle);
                             let _ = tauri::Emitter::emit(&app_handle, "batch-done", summary);
                         }
-                        had_active_sessions = active_count > 0;
+                        had_active_sessions = active > 0;
                     }
 
                     if changed {

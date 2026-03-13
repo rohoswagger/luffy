@@ -79,6 +79,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [now, setNow] = useState(new Date());
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const tabStripRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
   const waitingCount = sessions.filter((s) => s.status === "WAITING").length;
@@ -101,6 +102,17 @@ export default function App() {
       setActiveSession(null);
     }
   }, [sessions, activeSessionId, setActiveSession]);
+
+  // Auto-scroll active session tab into view (for 10+ sessions with keyboard nav)
+  useEffect(() => {
+    if (!activeSessionId || !tabStripRef.current) return;
+    const activeBtn = tabStripRef.current.querySelector(
+      `[data-session-id="${activeSessionId}"]`,
+    );
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }, [activeSessionId]);
 
   // Close sidebar when clicking outside
   useEffect(() => {
@@ -507,6 +519,7 @@ export default function App() {
             >
               {/* Session tabs */}
               <div
+                ref={tabStripRef}
                 className="session-tabs"
                 style={{
                   display: "flex",
@@ -520,6 +533,7 @@ export default function App() {
                 {sessions.map((s, i) => (
                   <button
                     key={s.id}
+                    data-session-id={s.id}
                     onClick={() => setActiveSession(s.id)}
                     title={`${s.name} — ⌘${i + 1}`}
                     style={{
