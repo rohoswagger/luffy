@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { formatRelativeTime } from "../utils/time";
 
@@ -99,6 +99,8 @@ export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
     };
   }, [sessionId, lastActivity]);
 
+  const reversedEvents = useMemo(() => [...events].reverse(), [events]);
+
   return (
     <div style={{ padding: "12px 0", fontFamily: "inherit" }}>
       <div
@@ -133,9 +135,9 @@ export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
           No events recorded.
         </div>
       ) : (
-        [...events].reverse().map((ev, i) => (
+        reversedEvents.map((ev, i) => (
           <div
-            key={i}
+            key={`${ev.timestamp}-${ev.kind.type}`}
             style={{
               padding: "4px 14px",
               display: "flex",
