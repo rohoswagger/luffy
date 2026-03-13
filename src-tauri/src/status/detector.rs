@@ -65,13 +65,21 @@ fn is_waiting_for_input(output: &str) -> bool {
 fn is_error(output: &str) -> bool {
     // Use specific multi-word patterns to avoid false positives on common single characters
     let patterns = [
-        "Error:", "error:", "ERROR:", "Failed:", "failed:", "FAILED:",
+        "Error:",
+        "error:",
+        "ERROR:",
+        "Failed:",
+        "failed:",
+        "FAILED:",
+        "fatal:",
+        "Fatal:",
+        "FATAL:",
+        "panic:",
+        "PANIC:",
+        "Traceback (most recent call last)",
     ];
-    let recent = if output.len() > 500 {
-        &output[output.len() - 500..]
-    } else {
-        output
-    };
+    let start = output.ceil_char_boundary(output.len().saturating_sub(500));
+    let recent = &output[start..];
     patterns.iter().any(|p| recent.contains(p))
 }
 
@@ -86,12 +94,11 @@ fn is_done(output: &str) -> bool {
         "LGTM",
         "No changes to make",
         "Nothing to do",
+        "Cancelled",
+        "Aborted",
     ];
-    let recent = if output.len() > 200 {
-        &output[output.len() - 200..]
-    } else {
-        output
-    };
+    let start = output.ceil_char_boundary(output.len().saturating_sub(200));
+    let recent = &output[start..];
     patterns.iter().any(|p| recent.contains(p))
 }
 
@@ -185,6 +192,36 @@ mod tests {
     #[test]
     fn detects_done_no_changes() {
         let output = "Checking files...\nNo changes to make";
+        assert_eq!(detect_status(output), Some(AgentStatus::Done));
+    }
+
+    #[test]
+    fn detects_error_fatal() {
+        let output = "Running git...\nfatal: not a git repository";
+        assert_eq!(detect_status(output), Some(AgentStatus::Error));
+    }
+
+    #[test]
+    fn detects_error_panic() {
+        let output = "panic: runtime error: index out of range";
+        assert_eq!(detect_status(output), Some(AgentStatus::Error));
+    }
+
+    #[test]
+    fn detects_error_python_traceback() {
+        let output = "Traceback (most recent call last)\n  File \"main.py\", line 1";
+        assert_eq!(detect_status(output), Some(AgentStatus::Error));
+    }
+
+    #[test]
+    fn detects_done_cancelled() {
+        let output = "Operation Cancelled";
+        assert_eq!(detect_status(output), Some(AgentStatus::Done));
+    }
+
+    #[test]
+    fn detects_done_aborted() {
+        let output = "Task Aborted";
         assert_eq!(detect_status(output), Some(AgentStatus::Done));
     }
 }

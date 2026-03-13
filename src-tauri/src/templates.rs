@@ -29,9 +29,13 @@ impl SessionTemplate {
             name: name.to_string(),
             agent_type: agent_type.to_string(),
             working_dir,
-            count: count.max(1),
+            count: count.clamp(1, 100),
             startup_command,
-            cost_budget_usd,
+            cost_budget_usd: if cost_budget_usd.is_finite() && cost_budget_usd >= 0.0 {
+                cost_budget_usd
+            } else {
+                0.0
+            },
         }
     }
 }
@@ -109,6 +113,30 @@ mod tests {
     fn count_clamped_to_min_1() {
         let t = SessionTemplate::new("w", "generic", None, 0, None, 0.0);
         assert_eq!(t.count, 1);
+    }
+
+    #[test]
+    fn count_clamped_to_max_100() {
+        let t = SessionTemplate::new("w", "generic", None, 500, None, 0.0);
+        assert_eq!(t.count, 100);
+    }
+
+    #[test]
+    fn negative_cost_budget_defaults_to_zero() {
+        let t = SessionTemplate::new("w", "generic", None, 1, None, -5.0);
+        assert_eq!(t.cost_budget_usd, 0.0);
+    }
+
+    #[test]
+    fn nan_cost_budget_defaults_to_zero() {
+        let t = SessionTemplate::new("w", "generic", None, 1, None, f64::NAN);
+        assert_eq!(t.cost_budget_usd, 0.0);
+    }
+
+    #[test]
+    fn infinity_cost_budget_defaults_to_zero() {
+        let t = SessionTemplate::new("w", "generic", None, 1, None, f64::INFINITY);
+        assert_eq!(t.cost_budget_usd, 0.0);
     }
 
     #[test]

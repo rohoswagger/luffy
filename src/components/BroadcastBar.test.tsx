@@ -105,6 +105,32 @@ describe("BroadcastBar", () => {
     expect(screen.getByText(/BROADCAST \(2\)/)).toBeInTheDocument();
   });
 
+  it("disables broadcast buttons when input is empty", () => {
+    render(<BroadcastBar sessionCount={2} onBroadcast={vi.fn()} />);
+    fireEvent.click(screen.getByText(/BROADCAST \(2\)/));
+    const btn = screen.getByTitle(/send to all/i);
+    expect(btn).toBeDisabled();
+  });
+
+  it("enables broadcast button when input has text", () => {
+    render(<BroadcastBar sessionCount={2} onBroadcast={vi.fn()} />);
+    fireEvent.click(screen.getByText(/BROADCAST \(2\)/));
+    fireEvent.change(screen.getByPlaceholderText(/broadcast/i), {
+      target: { value: "run tests" },
+    });
+    expect(screen.getByTitle(/send to all/i)).not.toBeDisabled();
+  });
+
+  it("does not call onBroadcast with whitespace-only input", () => {
+    const onBroadcast = vi.fn();
+    render(<BroadcastBar sessionCount={2} onBroadcast={onBroadcast} />);
+    fireEvent.click(screen.getByText(/BROADCAST \(2\)/));
+    const input = screen.getByPlaceholderText(/broadcast/i);
+    fireEvent.change(input, { target: { value: "   " } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onBroadcast).not.toHaveBeenCalled();
+  });
+
   it("collapses when Escape is pressed in the input", () => {
     render(<BroadcastBar sessionCount={3} onBroadcast={vi.fn()} />);
     // Expand
