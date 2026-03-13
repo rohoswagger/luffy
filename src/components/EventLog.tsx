@@ -47,6 +47,8 @@ export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
   const THROTTLE_MS = 10_000;
 
   useEffect(() => {
+    let cancelled = false;
+
     const sessionChanged = prevSessionIdRef.current !== sessionId;
     prevSessionIdRef.current = sessionId;
 
@@ -59,12 +61,16 @@ export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
       lastFetchRef.current = Date.now();
       invoke<SessionEventData[]>("get_session_events", { sessionId })
         .then((evs) => {
-          setEvents(evs);
-          setLoaded(true);
+          if (!cancelled) {
+            setEvents(evs);
+            setLoaded(true);
+          }
         })
         .catch((err: unknown) => {
           console.error("Failed to fetch session events:", err);
-          setLoaded(true);
+          if (!cancelled) {
+            setLoaded(true);
+          }
         });
     }
 
@@ -79,12 +85,13 @@ export function EventLog({ sessionId, sessionName, lastActivity }: Props) {
         const remaining = THROTTLE_MS - elapsed;
         timerRef.current = setTimeout(() => {
           timerRef.current = null;
-          doFetch();
+          if (!cancelled) doFetch();
         }, remaining);
       }
     }
 
     return () => {
+      cancelled = true;
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
         timerRef.current = null;
