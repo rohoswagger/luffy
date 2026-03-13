@@ -137,6 +137,11 @@ pub fn run() {
                         .filter(|s| s.cost_budget_usd > 0.0 && s.total_cost_usd > s.cost_budget_usd)
                         .collect();
                     for s in over_budget {
+                        let _ = tauri::Emitter::emit(
+                            &app_handle,
+                            "cost-budget-exceeded",
+                            &s.id,
+                        );
                         pty_mgr.detach(&s.id);
                         if let Some(ref wt_path) = s.worktree_path {
                             if wt_path.contains("/.worktrees/") {
