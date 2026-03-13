@@ -43,4 +43,27 @@ describe("QuickCommands", () => {
     fireEvent.click(screen.getByRole("button", { name: /\^C/i }));
     expect(onSend).toHaveBeenCalledWith("\x03");
   });
+
+  it("renders a custom input field", () => {
+    render(<QuickCommands onSend={vi.fn()} />);
+    expect(screen.getByPlaceholderText(/custom/i)).toBeInTheDocument();
+  });
+
+  it("sends custom input + newline on Enter and clears the field", () => {
+    const onSend = vi.fn();
+    render(<QuickCommands onSend={onSend} />);
+    const input = screen.getByPlaceholderText(/custom/i);
+    fireEvent.change(input, { target: { value: "my reply" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSend).toHaveBeenCalledWith("my reply\n");
+    expect((input as HTMLInputElement).value).toBe("");
+  });
+
+  it("does not send empty input on Enter", () => {
+    const onSend = vi.fn();
+    render(<QuickCommands onSend={onSend} />);
+    const input = screen.getByPlaceholderText(/custom/i);
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onSend).not.toHaveBeenCalled();
+  });
 });
