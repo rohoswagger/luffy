@@ -16,14 +16,24 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   const [name, setName] = useState("");
   const [agentType, setAgentType] = useState("claude-code");
   const [workingDir, setWorkingDir] = useState("");
+  const [count, setCount] = useState(1);
 
   if (!open) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onCreate({ name: name.trim() || "session", agent_type: agentType, working_dir: workingDir.trim() || null });
+    const baseName = name.trim() || "session";
+    const dir = workingDir.trim() || null;
+    if (count > 1) {
+      for (let i = 1; i <= count; i++) {
+        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir });
+      }
+    } else {
+      onCreate({ name: baseName, agent_type: agentType, working_dir: dir });
+    }
     setName("");
     setWorkingDir("");
+    setCount(1);
   };
 
   const overlayStyle: React.CSSProperties = {
@@ -66,6 +76,17 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
           <div>
             <label style={labelStyle}>Working Directory (optional)</label>
             <input style={inputStyle} placeholder="/path/to/project" value={workingDir} onChange={(e) => setWorkingDir(e.target.value)} />
+          </div>
+          <div>
+            <label style={labelStyle}>Count (spawn N parallel sessions)</label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              style={{ ...inputStyle, width: 80 }}
+              value={count}
+              onChange={(e) => setCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+            />
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button type="button" onClick={onClose} style={{ ...inputStyle, width: "auto", cursor: "pointer" }}>
