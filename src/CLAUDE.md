@@ -44,6 +44,10 @@
 - Events listened: `sessions-updated`, `agent-needs-input`, `cost-budget-exceeded`, `session-stuck`, `batch-done`
 - Exports: `createSession`, `killSession`, `broadcastInput`, `forkSession`, `setSessionNote`
 
+`hooks/useClock.ts` — shared 30s clock hook used by App.tsx and SessionSidebar
+
+`hooks/useKeyboardShortcuts.ts` — all Cmd+key shortcuts via stable ref pattern (28 tests)
+
 ## Utils
 
 `utils/sessions.ts`:
@@ -59,40 +63,40 @@
 
 ## Components
 
-| File                    | Purpose                                                                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| File                    | Purpose                                                                                                                                                                                 |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `SessionSidebar.tsx`    | Overlay panel (Cmd+B): session list with status, cost, branch, stuck indicator, rename/note inline editing, filter input, clear-done button. Closes on outside click or session select. |
-| `TerminalPane.tsx`      | xterm.js v5 terminal; attaches to `pty-output-{id}` event; handles resize                                                        |
-| `PaneGrid.tsx`          | 2-up / 4-up multi-terminal grid layout                                                                                           |
-| `StatusBadge.tsx`       | Colored pill: IDLE/THINKING/WAITING/ERROR/DONE                                                                                   |
-| `NewSessionModal.tsx`   | Advanced session creation modal (Cmd+Shift+N): name, agent type, dir, startup cmd, cost budget, worktree option. Lazy-loaded.    |
-| `CommandPalette.tsx`    | Cmd+K quick-switch between sessions. Lazy-loaded.                                                                                |
-| `SearchPanel.tsx`       | Cmd+Shift+F cross-session output search via `search_output` command. Lazy-loaded.                                                |
-| `EventLog.tsx`          | Right panel: timeline of status/cost events for active session; refetches when `lastActivity` changes                            |
-| `QuickCommands.tsx`     | Bottom bar when session is WAITING: preset replies + custom input                                                                |
-| `BroadcastBar.tsx`      | Bottom bar when >1 session: broadcast text to all or to WAITING only                                                             |
-| `TemplatesPanel.tsx`    | Template CRUD + launch (calls `list_templates`, `save_template`, `delete_template`). Lazy-loaded.                                |
-| `AutoResponsePanel.tsx` | CRUD for auto-respond patterns (Cmd+Shift+R). Lazy-loaded.                                                                       |
-| `KeyboardHelp.tsx`      | Cmd+/ help overlay listing all shortcuts. Lazy-loaded.                                                                            |
-| `Toast.tsx`             | Auto-dismissing bottom-center notification (3s default)                                                                          |
+| `TerminalPane.tsx`      | xterm.js v5 terminal (React.memo); attaches to `pty-output-{id}` event; handles resize                                                                                                  |
+| `PaneGrid.tsx`          | 2-up / 4-up multi-terminal grid layout                                                                                                                                                  |
+| `StatusBadge.tsx`       | Colored pill: IDLE/THINKING/WAITING/ERROR/DONE                                                                                                                                          |
+| `NewSessionModal.tsx`   | Advanced session creation modal (Cmd+Shift+N): name, agent type, dir, startup cmd, cost budget, worktree option. Lazy-loaded.                                                           |
+| `CommandPalette.tsx`    | Cmd+K quick-switch between sessions. Lazy-loaded.                                                                                                                                       |
+| `SearchPanel.tsx`       | Cmd+Shift+F cross-session output search via `search_output` command. Lazy-loaded.                                                                                                       |
+| `EventLog.tsx`          | Right panel: timeline of status/cost events for active session; refetches when `lastActivity` changes                                                                                   |
+| `QuickCommands.tsx`     | Bottom bar when session is WAITING: preset replies + custom input                                                                                                                       |
+| `BroadcastBar.tsx`      | Bottom bar when >1 session: broadcast text to all or to WAITING only                                                                                                                    |
+| `TemplatesPanel.tsx`    | Template CRUD + launch (calls `list_templates`, `save_template`, `delete_template`). Lazy-loaded.                                                                                       |
+| `AutoResponsePanel.tsx` | CRUD for auto-respond patterns (Cmd+Shift+R). Lazy-loaded.                                                                                                                              |
+| `KeyboardHelp.tsx`      | Cmd+/ help overlay listing all shortcuts. Lazy-loaded.                                                                                                                                  |
+| `Toast.tsx`             | Auto-dismissing bottom-center notification (3s default)                                                                                                                                 |
 
 ## Keyboard Shortcuts (defined in App.tsx)
 
-| Key             | Action                                      |
-| --------------- | ------------------------------------------- |
+| Key             | Action                                                  |
+| --------------- | ------------------------------------------------------- |
 | Cmd+N           | Instant new session (no modal, calls handleQuickCreate) |
-| Cmd+Shift+N     | Advanced new session modal                  |
-| Cmd+B           | Toggle sidebar overlay                      |
-| Cmd+T           | Templates panel                             |
-| Cmd+K           | Command palette                             |
-| Cmd+Shift+F     | Search panel                                |
-| Cmd+L           | Toggle event log                            |
-| Cmd+/           | Toggle keyboard help                        |
-| Cmd+Shift+R     | Auto-respond panel                          |
-| Cmd+Shift+A     | Jump to next WAITING session                |
-| Cmd+1–9         | Switch to session by index                  |
-| Cmd+[ / Cmd+]   | Previous / next session                     |
-| Cmd+W           | Kill active session                         |
-| Cmd+D           | Mark active session as done                 |
-| Cmd+E           | Export active session output to ~/Downloads  |
-| Cmd+Shift+1/2/4 | Switch layout 1up/2up/4up                   |
+| Cmd+Shift+N     | Advanced new session modal                              |
+| Cmd+B           | Toggle sidebar overlay                                  |
+| Cmd+T           | Templates panel                                         |
+| Cmd+K           | Command palette                                         |
+| Cmd+Shift+F     | Search panel                                            |
+| Cmd+L           | Toggle event log                                        |
+| Cmd+/           | Toggle keyboard help                                    |
+| Cmd+Shift+R     | Auto-respond panel                                      |
+| Cmd+Shift+A     | Jump to next WAITING session                            |
+| Cmd+1–9         | Switch to session by index                              |
+| Cmd+[ / Cmd+]   | Previous / next session                                 |
+| Cmd+W           | Kill active session                                     |
+| Cmd+D           | Mark active session as done                             |
+| Cmd+E           | Export active session output to ~/Downloads             |
+| Cmd+Shift+1/2/4 | Switch layout 1up/2up/4up                               |
