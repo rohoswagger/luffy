@@ -90,7 +90,16 @@ pub fn run() {
                                 .unwrap_or(false);
                             if already_responded { continue; }
 
-                            if let Some(response) = auto_respond::check_auto_respond(&s.last_output_preview, &patterns) {
+                            // Use last 500 chars of PTY output for richer pattern matching
+                            let check_text = pty_mgr.get_output(&s.id)
+                                .map(|o| {
+                                    let bytes = o.as_bytes();
+                                    let start = bytes.len().saturating_sub(500);
+                                    o[start..].to_string()
+                                })
+                                .unwrap_or_else(|| s.last_output_preview.clone());
+
+                            if let Some(response) = auto_respond::check_auto_respond(&check_text, &patterns) {
                                 let input = format!("{}\n", response);
                                 let _ = pty_mgr.write_input(&s.id, &input);
                                 last_auto_responded.insert(s.id.clone(), s.last_output_preview.clone());
@@ -125,6 +134,7 @@ pub fn run() {
             commands::fork_session,
             commands::rename_session,
             commands::set_session_note,
+            commands::mark_session_done,
             commands::list_auto_responses,
             commands::add_auto_response,
             commands::delete_auto_response,

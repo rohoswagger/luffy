@@ -14,6 +14,7 @@ import { KeyboardHelp } from "./components/KeyboardHelp";
 import { TemplatesPanel } from "./components/TemplatesPanel";
 import { AutoResponsePanel } from "./components/AutoResponsePanel";
 import { useSessionStore } from "./store/sessions";
+import { invoke } from "@tauri-apps/api/core";
 import { useTauriEvents, createSession, killSession, broadcastInput, forkSession } from "./hooks/useTauri";
 import { nextWaitingSessionId } from "./utils/sessions";
 
@@ -61,6 +62,14 @@ export default function App() {
       console.error("Failed to fork session:", err);
     }
   }, [setActiveSession]);
+
+  const handleMarkDone = useCallback(async (id: string) => {
+    try {
+      await invoke("mark_session_done", { sessionId: id });
+    } catch (err) {
+      console.error("Failed to mark session done:", err);
+    }
+  }, []);
 
   const handleKill = useCallback(async (id: string) => {
     try {
@@ -140,6 +149,7 @@ export default function App() {
         onNewSession={() => setShowNewModal(true)}
         onKill={handleKill}
         onFork={handleFork}
+        onMarkDone={handleMarkDone}
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>
@@ -180,11 +190,9 @@ export default function App() {
               <button
                 title="Export session output to ~/Downloads"
                 onClick={() => {
-                  import("@tauri-apps/api/core").then(({ invoke }) => {
-                    invoke<string>("export_session_output", { sessionId: activeSession.id })
-                      .then((path) => alert(`Saved: ${path}`))
-                      .catch((e) => console.error("Export failed:", e));
-                  });
+                  invoke<string>("export_session_output", { sessionId: activeSession.id })
+                    .then((path) => alert(`Saved: ${path}`))
+                    .catch((e) => console.error("Export failed:", e));
                 }}
                 style={{ background: "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
               >
@@ -250,9 +258,7 @@ export default function App() {
         {activeSession?.status === "WAITING" && (
           <QuickCommands
             onSend={(cmd) => {
-              import("@tauri-apps/api/core").then(({ invoke }) => {
-                invoke("send_input", { sessionId: activeSession.id, input: cmd }).catch(console.error);
-              });
+              invoke("send_input", { sessionId: activeSession.id, input: cmd }).catch(console.error);
             }}
           />
         )}

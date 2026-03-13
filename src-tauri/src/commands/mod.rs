@@ -361,6 +361,20 @@ pub async fn get_session_events(
     Ok(state.session_mgr.get_events(&session_id))
 }
 
+/// Manually mark a session as Done.
+#[tauri::command]
+pub async fn mark_session_done(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<(), String> {
+    state.session_mgr.update_status(&session_id, crate::session::AgentStatus::Done);
+    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
+        .into_iter().map(SessionDto::from).collect();
+    let _ = app.emit("sessions-updated", sessions);
+    Ok(())
+}
+
 /// Resize a session's PTY to match the frontend terminal dimensions.
 #[tauri::command]
 pub async fn resize_pty(

@@ -12,6 +12,7 @@ interface Props {
   onNewSession: () => void;
   onKill: (id: string) => void;
   onFork?: (id: string) => void;
+  onMarkDone?: (id: string) => void;
 }
 
 const AGENT_ICONS: Record<string, string> = {
@@ -20,7 +21,7 @@ const AGENT_ICONS: Record<string, string> = {
   "generic": "▸",
 };
 
-export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork }: Props) {
+export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork, onMarkDone }: Props) {
   const [now, setNow] = useState(new Date());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -163,6 +164,15 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   </span>
                 )}
               </div>
+              {onMarkDone && !["DONE", "ERROR"].includes(session.status) && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onMarkDone(session.id); }}
+                  title="Mark as done"
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                >
+                  ✓
+                </button>
+              )}
               {onFork && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onFork(session.id); }}
