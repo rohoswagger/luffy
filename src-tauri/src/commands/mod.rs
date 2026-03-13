@@ -148,6 +148,17 @@ pub async fn kill_session(
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<(), String> {
+    // If the session has a worktree under .worktrees/, clean it up
+    if let Some(session) = state.session_mgr.get_session(&session_id) {
+        if let Some(ref wt_path) = session.worktree_path {
+            if wt_path.contains("/.worktrees/") {
+                if let Some(repo_path) = wt_path.rfind("/.worktrees/").map(|i| &wt_path[..i]) {
+                    let _ = crate::git::remove_worktree(repo_path, wt_path);
+                }
+            }
+        }
+    }
+
     state.pty_mgr.detach(&session_id);
     state.session_mgr.kill_session(&session_id).map_err(|e| e.to_string())?;
 

@@ -36,6 +36,8 @@ pub fn run() {
             // WAITING sessions that match configured auto-response patterns.
             tauri::async_runtime::spawn(async move {
                 let mut tick = 0u32;
+                // Track last auto-respond per session: session_id → last preview that was responded to
+                let mut last_auto_responded: std::collections::HashMap<String, String> = std::collections::HashMap::new();
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                     tick += 1;
@@ -53,16 +55,27 @@ pub fn run() {
                     }
 
                     // Auto-respond: check WAITING sessions against configured patterns
+                    // Debounce: only respond once per unique (session, preview) pair
                     let patterns = auto_respond::load_auto_responses();
                     if !patterns.is_empty() {
                         let waiting: Vec<_> = session_mgr.list_sessions()
                             .into_iter()
                             .filter(|s| matches!(s.status, session::AgentStatus::WaitingForInput))
                             .collect();
+                        // Remove entries for sessions no longer WAITING
+                        let waiting_ids: std::collections::HashSet<_> = waiting.iter().map(|s| s.id.clone()).collect();
+                        last_auto_responded.retain(|id, _| waiting_ids.contains(id));
+
                         for s in waiting {
+                            let already_responded = last_auto_responded.get(&s.id)
+                                .map(|prev| prev == &s.last_output_preview)
+                                .unwrap_or(false);
+                            if already_responded { continue; }
+
                             if let Some(response) = auto_respond::check_auto_respond(&s.last_output_preview, &patterns) {
                                 let input = format!("{}\n", response);
                                 let _ = pty_mgr.write_input(&s.id, &input);
+                                last_auto_responded.insert(s.id.clone(), s.last_output_preview.clone());
                             }
                         }
                     }

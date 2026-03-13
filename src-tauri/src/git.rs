@@ -38,6 +38,26 @@ pub fn create_worktree(repo_path: &str, branch: &str) -> Result<String, String> 
     Ok(worktree_path)
 }
 
+/// Remove a git worktree at the given path.
+/// Returns Ok(()) on success or if the worktree doesn't exist.
+pub fn remove_worktree(repo_path: &str, worktree_path: &str) -> Result<(), String> {
+    // First remove the worktree registration
+    let output = Command::new("git")
+        .args(["-C", repo_path, "worktree", "remove", "--force", worktree_path])
+        .output()
+        .map_err(|e| e.to_string())?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        // Ignore "not a worktree" errors
+        if !stderr.contains("not a working tree") && !stderr.contains("not a worktree") {
+            return Err(format!("git worktree remove failed: {}", stderr.trim()));
+        }
+    }
+
+    Ok(())
+}
+
 /// Detect git branch and worktree root for a given directory.
 /// Returns (branch, worktree_path). Either may be None if not in a git repo.
 pub fn detect_git_info(dir: &str) -> (Option<String>, Option<String>) {
