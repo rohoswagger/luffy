@@ -46,7 +46,7 @@ pub fn run() {
                     let mut changed = !dead.is_empty();
 
                     // Every 60s (6 ticks), auto-clean stale DONE/ERROR sessions (>30 min old)
-                    if tick % 6 == 0 {
+                    if tick.is_multiple_of(6) {
                         let stale = session_mgr.stale_terminal_sessions(chrono::Duration::minutes(30));
                         for id in stale {
                             let _ = session_mgr.remove_session(&id);

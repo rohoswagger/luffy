@@ -16,6 +16,7 @@ pub struct PtyHandle {
     master: Box<dyn portable_pty::MasterPty + Send>,
 }
 
+#[derive(Default)]
 pub struct PtyManager {
     handles: Arc<Mutex<HashMap<String, PtyHandle>>>,
     /// ANSI-stripped rolling output buffers for cross-session search.

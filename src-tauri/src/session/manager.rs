@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 use super::model::{Session, AgentStatus, AgentType};
 use super::events::SessionEvent;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct SessionManager {
     sessions: Arc<Mutex<HashMap<String, Session>>>,
 }
@@ -311,8 +311,7 @@ pub fn extract_preview(raw: &str) -> String {
     let clean = ansi_re.replace_all(raw, "");
     clean.lines()
         .map(|l| l.trim())
-        .filter(|l| !l.is_empty())
-        .last()
+        .rfind(|l| !l.is_empty())
         .map(|l| if l.len() > 80 { &l[..80] } else { l })
         .unwrap_or("")
         .to_string()

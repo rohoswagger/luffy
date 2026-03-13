@@ -11,6 +11,7 @@ pub enum AgentStatus {
     Done,
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for AgentStatus {
     fn default() -> Self { AgentStatus::Idle }
 }
