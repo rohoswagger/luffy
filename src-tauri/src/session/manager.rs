@@ -5,6 +5,15 @@ use std::collections::HashMap;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
+/// Config needed to restart a session (kill + recreate with same settings).
+pub struct RestartArgs {
+    pub name: String,
+    pub agent_type: AgentType,
+    pub working_dir: Option<String>,
+    pub startup_command: Option<String>,
+    pub cost_budget_usd: f64,
+}
+
 /// Result of processing a PTY output chunk in a single lock scope.
 pub struct PtyChunkResult {
     pub status_changed: bool,
@@ -312,20 +321,18 @@ impl SessionManager {
     }
 
     /// Return all config needed to restart a session (kill + recreate).
-    /// Returns (name, agent_type, working_dir, startup_command, cost_budget_usd).
-    pub fn get_restart_args(
-        &self,
-        session_id: &str,
-    ) -> Option<(String, AgentType, Option<String>, Option<String>, f64)> {
-        self.sessions.lock().unwrap().get(session_id).map(|s| {
-            (
-                s.name.clone(),
-                s.agent_type.clone(),
-                s.worktree_path.clone(),
-                s.startup_command.clone(),
-                s.cost_budget_usd,
-            )
-        })
+    pub fn get_restart_args(&self, session_id: &str) -> Option<RestartArgs> {
+        self.sessions
+            .lock()
+            .unwrap()
+            .get(session_id)
+            .map(|s| RestartArgs {
+                name: s.name.clone(),
+                agent_type: s.agent_type.clone(),
+                working_dir: s.worktree_path.clone(),
+                startup_command: s.startup_command.clone(),
+                cost_budget_usd: s.cost_budget_usd,
+            })
     }
 
     /// Return (name, agent_type, working_dir, startup_command) for forking a session.
@@ -611,10 +618,10 @@ mod tests {
         let id = s.id.clone();
         mgr.sessions.lock().unwrap().insert(id.clone(), s);
 
-        let (name, _, _, cmd, budget) = mgr.get_restart_args(&id).unwrap();
-        assert_eq!(name, "my-session");
-        assert_eq!(cmd.as_deref(), Some("claude --yes"));
-        assert_eq!(budget, 5.0);
+        let ra = mgr.get_restart_args(&id).unwrap();
+        assert_eq!(ra.name, "my-session");
+        assert_eq!(ra.startup_command.as_deref(), Some("claude --yes"));
+        assert_eq!(ra.cost_budget_usd, 5.0);
     }
 
     #[test]

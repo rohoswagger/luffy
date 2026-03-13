@@ -491,7 +491,7 @@ pub async fn restart_session(
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<SessionDto, String> {
-    let (name, agent_type, working_dir, startup_command, cost_budget) = state
+    let args = state
         .session_mgr
         .get_restart_args(&session_id)
         .ok_or_else(|| "Session not found".to_string())?;
@@ -503,15 +503,17 @@ pub async fn restart_session(
     // Create a new session with the same config
     let mut session = state
         .session_mgr
-        .create_session(&name, agent_type, working_dir.as_deref())
+        .create_session(&args.name, args.agent_type, args.working_dir.as_deref())
         .map_err(|e| e.to_string())?;
 
-    if cost_budget > 0.0 {
-        state.session_mgr.set_cost_budget(&session.id, cost_budget);
-        session.cost_budget_usd = cost_budget;
+    if args.cost_budget_usd > 0.0 {
+        state
+            .session_mgr
+            .set_cost_budget(&session.id, args.cost_budget_usd);
+        session.cost_budget_usd = args.cost_budget_usd;
     }
 
-    if let Some(ref cmd) = startup_command {
+    if let Some(ref cmd) = args.startup_command {
         if !cmd.is_empty() {
             state
                 .session_mgr
@@ -532,7 +534,7 @@ pub async fn restart_session(
         &tmux_name,
     )?;
 
-    if let Some(ref cmd) = startup_command {
+    if let Some(ref cmd) = args.startup_command {
         if !cmd.is_empty() {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             let _ = state
