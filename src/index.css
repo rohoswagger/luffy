@@ -1,80 +1,105 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────────
-   LUFFY DESIGN SYSTEM
+   KŪKAN (空間) DESIGN SYSTEM
+   Kanso · Ma · Shibui
    ───────────────────────────────────────── */
 
 :root {
-  /* Colors ── base surfaces */
-  --bg-0: #090d13; /* deepest: app backdrop */
-  --bg-1: #0d1117; /* primary: main content area */
-  --bg-2: #161b22; /* secondary: sidebars, panels */
-  --bg-3: #1c2128; /* tertiary: cards, inputs */
-  --bg-4: #21262d; /* elevated: hover states */
+  /* Colors ── Sumi & Paper */
+  --color-paper: #f9f8f6; /* Washi paper — main background */
+  --color-paper-warm: #f3f1ec; /* Slightly warmer paper for panels */
+  --color-sumi: #1a1a1a; /* Charcoal ink — primary text */
+  --color-kage: #e0ddd7; /* Shadow — subtle borders/dividers */
+  --color-kage-deep: #c8c4bc; /* Deeper shadow — stronger dividers */
+  --color-momo: #d0839a; /* Cherry blossom — primary accent (Hanko rule) */
+  --color-shinrin: #4a5d4e; /* Forest green — secondary accent */
+  --color-ishi: #8a8580; /* Stone — muted text */
+  --color-kumo: #b5b0a8; /* Cloud — disabled text */
 
-  /* Colors ── borders */
-  --border: #30363d;
-  --border-subtle: #21262d;
-  --border-strong: #484f58;
+  /* Status colors — muted, Shibui */
+  --status-thinking: #8b7caa; /* Muted purple */
+  --status-waiting: #c4a348; /* Warm amber */
+  --status-error: #c45c55; /* Subdued red */
+  --status-done: #5a8a62; /* Soft green */
 
-  /* Colors ── text */
-  --text-1: #e6edf3; /* primary */
-  --text-2: #8b949e; /* secondary */
-  --text-3: #484f58; /* muted / disabled */
+  /* Semantic aliases */
+  --bg-primary: var(--color-paper);
+  --bg-secondary: var(--color-paper-warm);
+  --bg-tertiary: var(--color-kage);
+  --text-primary: var(--color-sumi);
+  --text-secondary: var(--color-ishi);
+  --border: var(--color-kage);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-strong: var(--color-kage-deep);
 
-  /* Colors ── accents */
-  --blue: #58a6ff;
-  --green: #3fb950;
-  --yellow: #d29922;
-  --red: #f85149;
-  --purple: #bc8cff;
-  --orange: #db7c39;
+  /* Legacy aliases for components */
+  --accent-blue: var(--color-shinrin);
+  --accent-green: var(--status-done);
+  --accent-yellow: var(--status-waiting);
+  --accent-red: var(--status-error);
+  --accent-purple: var(--status-thinking);
+  --blue: var(--color-shinrin);
+  --green: var(--status-done);
+  --yellow: var(--status-waiting);
+  --red: var(--status-error);
+  --purple: var(--status-thinking);
+  --orange: #b87a4a;
 
-  /* Semantic aliases (used by components) */
-  --bg-primary: var(--bg-1);
-  --bg-secondary: var(--bg-2);
-  --bg-tertiary: var(--bg-4);
-  --text-primary: var(--text-1);
-  --text-secondary: var(--text-2);
-  --accent-blue: var(--blue);
-  --accent-green: var(--green);
-  --accent-yellow: var(--yellow);
-  --accent-red: var(--red);
-  --accent-purple: var(--purple);
+  /* Legacy bg aliases */
+  --bg-0: var(--color-paper);
+  --bg-1: var(--color-paper);
+  --bg-2: var(--color-paper-warm);
+  --bg-3: var(--color-paper-warm);
+  --bg-4: var(--color-kage);
+  --text-1: var(--color-sumi);
+  --text-2: var(--color-ishi);
+  --text-3: var(--color-kumo);
 
-  /* Spacing scale (4px base) */
-  --sp-1: 4px;
-  --sp-2: 8px;
+  /* Spacing ── 8pt grid (Ma) */
+  --space-xs: 4px;
+  --space-s: 8px;
+  --space-m: 16px;
+  --space-l: 32px;
+  --space-xl: 64px;
+  --space-xxl: 128px;
+
+  /* Legacy spacing aliases */
+  --sp-1: var(--space-xs);
+  --sp-2: var(--space-s);
   --sp-3: 12px;
-  --sp-4: 16px;
+  --sp-4: var(--space-m);
   --sp-5: 20px;
   --sp-6: 24px;
-  --sp-8: 32px;
+  --sp-8: var(--space-l);
 
-  /* Border radius */
+  /* Border radius ── minimal, Kanso */
   --r-sm: 3px;
   --r-md: 6px;
   --r-lg: 10px;
   --r-xl: 14px;
   --r-pill: 999px;
 
-  /* Typography */
+  /* Typography ── Gothic Sans */
+  --font-sans: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
   --font-mono: "SF Mono", "JetBrains Mono", Menlo, monospace;
   --text-xs: 10px;
   --text-sm: 11px;
-  --text-base: 12px;
-  --text-md: 13px;
-  --text-lg: 15px;
-  --text-xl: 18px;
+  --text-base: 13px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 20px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  /* Shadows ── flat, no heavy shadows (Shibui) */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
 
-  /* Transitions */
-  --t-fast: 100ms ease;
-  --t-base: 150ms ease;
+  /* Transitions ── calm, not snappy */
+  --t-fast: 120ms ease;
+  --t-base: 200ms ease-out;
+  --t-slow: 300ms ease-out;
 }
 
 /* ─── Reset ─── */
@@ -87,31 +112,42 @@
 }
 
 body {
-  background: var(--bg-0);
-  color: var(--text-1);
-  font-family: var(--font-mono);
+  background: var(--color-paper);
+  color: var(--color-sumi);
+  font-family: var(--font-sans);
   font-size: var(--text-base);
-  line-height: 1.5;
+  line-height: 1.7;
+  letter-spacing: 0.02em;
   overflow: hidden;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Headings & labels — wide tracking */
+h1,
+h2,
+h3,
+.label {
+  letter-spacing: 0.1em;
+  font-weight: 500;
+}
+
 /* ─────────────────────────────────────────
-   BUTTONS
+   BUTTONS — Kanso
    ───────────────────────────────────────── */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--sp-1);
-  border: 1px solid transparent;
+  gap: var(--space-xs);
+  border: 0.5px solid transparent;
   border-radius: var(--r-sm);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 400;
+  letter-spacing: 0.04em;
   cursor: pointer;
-  padding: 3px 10px;
+  padding: 4px 12px;
   line-height: 1.4;
   white-space: nowrap;
   transition:
@@ -122,57 +158,56 @@ body {
   user-select: none;
 }
 .btn:focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 1.5px solid var(--color-momo);
   outline-offset: 2px;
 }
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 0.3;
   cursor: not-allowed;
 }
 
-/* Primary — filled blue */
+/* Primary — Momo accent (Hanko rule: use sparingly) */
 .btn-primary {
-  background: var(--blue);
-  border-color: var(--blue);
-  color: #000;
-  font-weight: 600;
+  background: var(--color-momo);
+  border-color: var(--color-momo);
+  color: #fff;
+  font-weight: 500;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #79bbff;
-  border-color: #79bbff;
+  background: #c0748a;
+  border-color: #c0748a;
 }
 
-/* Ghost — bordered */
+/* Ghost — hairline border */
 .btn-ghost {
   background: transparent;
-  border-color: var(--border);
-  color: var(--text-2);
+  border-color: var(--color-kage);
+  color: var(--color-ishi);
 }
 .btn-ghost:hover:not(:disabled) {
-  background: var(--bg-4);
-  border-color: var(--border-strong);
-  color: var(--text-1);
+  background: var(--color-kage);
+  border-color: var(--color-kage-deep);
+  color: var(--color-sumi);
 }
 
-/* Danger — red */
+/* Danger — subdued red */
 .btn-danger {
   background: transparent;
-  border-color: #7f1d1d;
-  color: #f87171;
+  border-color: rgba(196, 92, 85, 0.3);
+  color: var(--status-error);
 }
 .btn-danger:hover:not(:disabled) {
-  background: rgba(248, 113, 113, 0.1);
-  border-color: var(--red);
-  color: #fca5a5;
+  background: rgba(196, 92, 85, 0.08);
+  border-color: var(--status-error);
 }
 
-/* Icon — square, no label */
+/* Icon — hidden until parent hover */
 .btn-icon {
   padding: 3px 5px;
   border-radius: var(--r-sm);
   background: transparent;
   border: none;
-  color: var(--text-2);
+  color: var(--color-ishi);
   font-size: var(--text-base);
   opacity: 0;
   transition:
@@ -181,12 +216,12 @@ body {
     background var(--t-fast);
 }
 .btn-icon:hover:not(:disabled) {
-  background: var(--bg-4);
-  color: var(--text-1);
+  background: var(--color-kage);
+  color: var(--color-sumi);
   opacity: 1 !important;
 }
 
-/* Toolbar button (ghost variant, tighter) */
+/* Toolbar button */
 .btn-toolbar {
   padding: 2px 8px;
   font-size: var(--text-xs);
@@ -194,17 +229,17 @@ body {
 }
 
 /* ─────────────────────────────────────────
-   INPUTS
+   INPUTS — Invisible Borders (Fukinsei)
    ───────────────────────────────────────── */
 
 .input {
-  background: var(--bg-3);
-  border: 1px solid var(--border);
+  background: var(--color-paper);
+  border: 0.5px solid var(--color-kage);
   border-radius: var(--r-sm);
-  color: var(--text-1);
-  font-family: var(--font-mono);
+  color: var(--color-sumi);
+  font-family: var(--font-sans);
   font-size: var(--text-md);
-  padding: 7px 11px;
+  padding: 8px 12px;
   width: 100%;
   transition:
     border-color var(--t-fast),
@@ -212,39 +247,37 @@ body {
   outline: none;
 }
 .input::placeholder {
-  color: var(--text-3);
+  color: var(--color-kumo);
 }
 .input:focus {
-  border-color: var(--blue);
-  box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.15);
+  border-color: var(--color-momo);
+  box-shadow: 0 0 0 2px rgba(208, 131, 154, 0.12);
 }
 .input:hover:not(:focus) {
-  border-color: var(--border-strong);
+  border-color: var(--color-kage-deep);
 }
 
-/* Select inherits input */
 select.input {
   cursor: pointer;
 }
 
-/* Filter input (smaller) */
 .input-sm {
   font-size: var(--text-sm);
   padding: 4px 8px;
 }
 
 /* ─────────────────────────────────────────
-   LABELS
+   LABELS — Wide tracking, uppercase
    ───────────────────────────────────────── */
 
 .label {
   display: block;
   font-size: var(--text-xs);
   font-weight: 500;
-  color: var(--text-2);
-  letter-spacing: 0.06em;
+  color: var(--color-ishi);
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: var(--sp-1);
+  margin-bottom: var(--space-xs);
 }
 
 /* ─────────────────────────────────────────
@@ -254,14 +287,14 @@ select.input {
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: rgba(249, 248, 246, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
-  animation: overlay-in var(--t-base) ease;
+  animation: overlay-in var(--t-base) ease-out;
 }
 @keyframes overlay-in {
   from {
@@ -273,46 +306,46 @@ select.input {
 }
 
 .modal {
-  background: var(--bg-2);
-  border: 1px solid var(--border);
+  background: var(--color-paper);
+  border: 0.5px solid var(--color-kage);
   border-radius: var(--r-lg);
-  padding: var(--sp-6);
+  padding: var(--space-l);
   box-shadow: var(--shadow-lg);
-  animation: modal-in var(--t-base) ease;
+  animation: modal-in var(--t-base) ease-out;
 }
 @keyframes modal-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .modal-title {
   font-size: var(--text-lg);
-  font-weight: 600;
-  color: var(--text-1);
-  margin-bottom: var(--sp-5);
+  font-weight: 500;
+  color: var(--color-sumi);
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-m);
 }
 
 .modal-footer {
   display: flex;
-  gap: var(--sp-2);
+  gap: var(--space-s);
   justify-content: flex-end;
-  margin-top: var(--sp-5);
+  margin-top: var(--space-m);
 }
 
 /* ─────────────────────────────────────────
    SESSION SIDEBAR
    ───────────────────────────────────────── */
 
-/* Session item — action buttons reveal on hover */
 .session-item {
   position: relative;
-  padding: var(--sp-2) var(--sp-4);
+  padding: var(--space-s) var(--space-m);
   cursor: pointer;
   border-left: 2px solid transparent;
   transition:
@@ -320,14 +353,13 @@ select.input {
     border-color var(--t-fast);
 }
 .session-item:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(0, 0, 0, 0.02);
 }
 .session-item[data-active="true"] {
-  background: var(--bg-4);
-  border-left-color: var(--blue);
+  background: rgba(0, 0, 0, 0.04);
+  border-left-color: var(--color-momo);
 }
 
-/* Action buttons (✓ ↺ ⊕ ✕) — hidden until hover */
 .session-item .session-actions {
   opacity: 0;
   transition: opacity var(--t-fast);
@@ -337,24 +369,26 @@ select.input {
 }
 
 /* ─────────────────────────────────────────
-   TOAST
+   TOAST — Shibui
    ───────────────────────────────────────── */
 
 .toast {
   position: fixed;
-  bottom: var(--sp-5);
+  bottom: var(--space-m);
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-4);
-  border: 1px solid var(--border-strong);
+  background: var(--color-sumi);
+  border: none;
   border-radius: var(--r-md);
-  color: var(--text-1);
+  color: var(--color-paper);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
-  padding: var(--sp-2) var(--sp-4);
+  letter-spacing: 0.04em;
+  padding: var(--space-s) var(--space-m);
   box-shadow: var(--shadow-md);
   z-index: 200;
   cursor: pointer;
-  animation: toast-in 150ms ease;
+  animation: toast-in var(--t-base) ease-out;
   white-space: nowrap;
   max-width: 480px;
   overflow: hidden;
@@ -363,7 +397,7 @@ select.input {
 @keyframes toast-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(8px);
+    transform: translateX(-50%) translateY(6px);
   }
   to {
     opacity: 1;
@@ -372,43 +406,58 @@ select.input {
 }
 
 /* ─────────────────────────────────────────
-   MISC
+   MISC — Ma & Shibui
    ───────────────────────────────────────── */
 
-/* Scrollbar styling */
+/* Scrollbar — barely visible */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-4);
+  background: var(--color-kage);
   border-radius: var(--r-pill);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
+  background: var(--color-kage-deep);
 }
 
-/* Search result item hover */
+/* Search result hover */
 .search-result-item {
   cursor: pointer;
   transition: background var(--t-fast);
 }
 .search-result-item:hover {
-  background: var(--bg-tertiary);
+  background: rgba(0, 0, 0, 0.03);
 }
 
-/* Focus ring for keyboard nav */
+/* Focus ring — Momo accent */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 1.5px solid var(--color-momo);
   outline-offset: 2px;
 }
 
-/* Divider */
+/* Hairline divider (Shibui) */
 .divider {
-  height: 1px;
-  background: var(--border);
-  margin: var(--sp-3) 0;
+  height: 0;
+  border: 0;
+  border-top: 0.5px solid var(--color-kage);
+  margin: var(--space-m) 0;
+}
+
+/* Status dot pulse — slow, calm */
+@keyframes pulse-slow {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.animate-pulse {
+  animation: pulse-slow 2.5s ease-in-out infinite;
 }

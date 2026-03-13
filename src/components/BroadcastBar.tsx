@@ -7,7 +7,12 @@ interface Props {
   onBroadcastWaiting?: (text: string) => void;
 }
 
-export function BroadcastBar({ sessionCount, waitingCount, onBroadcast, onBroadcastWaiting }: Props) {
+export function BroadcastBar({
+  sessionCount,
+  waitingCount,
+  onBroadcast,
+  onBroadcastWaiting,
+}: Props) {
   const [value, setValue] = useState("");
 
   const submit = () => {
@@ -23,73 +28,90 @@ export function BroadcastBar({ sessionCount, waitingCount, onBroadcast, onBroadc
   };
 
   return (
-    <div style={{
-      height: 36,
-      background: "var(--bg-secondary)",
-      borderTop: "1px solid var(--border)",
-      display: "flex",
-      alignItems: "center",
-      padding: "0 12px",
-      gap: 8,
-      flexShrink: 0,
-    }}>
-      {/* Icon + label */}
-      <span style={{ fontSize: 11, color: "var(--accent-purple)", fontWeight: 700, letterSpacing: "0.05em", whiteSpace: "nowrap" }}>
+    <div
+      style={{
+        height: 34,
+        background: "var(--bg-2)",
+        borderTop: "1px solid var(--border)",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 12px",
+        gap: 8,
+        flexShrink: 0,
+      }}
+    >
+      <span
+        style={{
+          fontSize: "var(--text-xs)",
+          color: "var(--purple)",
+          fontWeight: 700,
+          letterSpacing: "0.06em",
+          whiteSpace: "nowrap",
+        }}
+      >
         ⬡ BROADCAST
       </span>
-
-      {/* Session count badge */}
-      <span style={{
-        fontSize: 10, background: "var(--bg-tertiary)", border: "1px solid var(--border)",
-        borderRadius: 10, padding: "1px 6px", color: "var(--text-secondary)",
-      }}>
+      <span
+        style={{
+          fontSize: "var(--text-xs)",
+          background: "var(--bg-3)",
+          border: "1px solid var(--border)",
+          borderRadius: "var(--r-pill)",
+          padding: "1px 6px",
+          color: "var(--text-2)",
+        }}
+      >
         {sessionCount}
       </span>
-
-      {/* Input */}
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); submit(); } }}
-        placeholder="Broadcast to all sessions… (Enter to send)"
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            submit();
+          }
+        }}
+        placeholder="Broadcast to all sessions… (Enter)"
         style={{
           flex: 1,
           background: "transparent",
           border: "none",
           outline: "none",
-          color: "var(--text-primary)",
-          fontSize: 12,
+          color: "var(--text-1)",
+          fontSize: "var(--text-base)",
           fontFamily: "inherit",
         }}
       />
-
-      {/* Send to WAITING button */}
       {waitingCount && waitingCount > 0 && onBroadcastWaiting && (
         <button
           onClick={submitWaiting}
           title={`Send to waiting sessions (${waitingCount})`}
-          style={{ background: "#d29922", border: "none", borderRadius: 4, color: "#000", cursor: "pointer", padding: "2px 8px", fontSize: 11, fontWeight: 700 }}
+          className="btn"
+          style={{
+            background: "var(--yellow)",
+            borderColor: "var(--yellow)",
+            color: "var(--color-paper)",
+            fontWeight: 700,
+            padding: "2px 8px",
+            fontSize: "var(--text-xs)",
+          }}
         >
-          ↵ {waitingCount} WAIT
+          ↵ {waitingCount} waiting
         </button>
       )}
-
-      {/* Send button */}
       <button
         onClick={submit}
         title="Send to all sessions"
+        className="btn btn-ghost"
         style={{
-          background: "none",
-          border: "1px solid var(--border)",
-          borderRadius: 4,
-          color: "var(--accent-purple)",
-          cursor: "pointer",
           padding: "2px 8px",
-          fontSize: 11,
-          fontWeight: 600,
+          fontSize: "var(--text-xs)",
+          color: "var(--purple)",
+          borderColor: "var(--purple)",
         }}
       >
-        ↵ ALL
+        ↵ all
       </button>
     </div>
   );

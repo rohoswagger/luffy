@@ -9,11 +9,11 @@ const STATUS_CONFIG: Record<
   SessionData["status"],
   { color: string; pulse: boolean; label: string }
 > = {
-  THINKING: { color: "#bc8cff", pulse: true, label: "THINKING" },
-  WAITING: { color: "#d29922", pulse: true, label: "WAITING" },
-  IDLE: { color: "#8b949e", pulse: false, label: "IDLE" },
-  ERROR: { color: "#f85149", pulse: false, label: "ERROR" },
-  DONE: { color: "#3fb950", pulse: false, label: "DONE" },
+  THINKING: { color: "#8b7caa", pulse: true, label: "THINKING" },
+  WAITING: { color: "#c4a348", pulse: true, label: "WAITING" },
+  IDLE: { color: "#b5b0a8", pulse: false, label: "IDLE" },
+  ERROR: { color: "#c45c55", pulse: false, label: "ERROR" },
+  DONE: { color: "#5a8a62", pulse: false, label: "DONE" },
 };
 
 export const StatusBadge = React.memo(function StatusBadge({ status }: Props) {

@@ -12,7 +12,11 @@ interface Props {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: Props) {
+export function TerminalPane({
+  sessionId,
+  tmuxSession: _tmuxSession,
+  active,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -23,15 +27,26 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
 
     const term = new Terminal({
       theme: {
-        background: "#0d1117",
-        foreground: "#e6edf3",
-        cursor: "#58a6ff",
-        selectionBackground: "#264f78",
-        black: "#484f58",   red: "#ff7b72",  green: "#3fb950",  yellow: "#d29922",
-        blue: "#58a6ff",    magenta: "#bc8cff", cyan: "#39c5cf", white: "#b1bac4",
-        brightBlack: "#6e7681", brightRed: "#ffa198", brightGreen: "#56d364",
-        brightYellow: "#e3b341", brightBlue: "#79c0ff", brightMagenta: "#d2a8ff",
-        brightCyan: "#56d4dd", brightWhite: "#f0f6fc",
+        background: "#1a1a1a",
+        foreground: "#d4d4d4",
+        cursor: "#d0839a",
+        selectionBackground: "#3d3535",
+        black: "#3a3a3a",
+        red: "#c45c55",
+        green: "#5a8a62",
+        yellow: "#c4a348",
+        blue: "#6b8fad",
+        magenta: "#8b7caa",
+        cyan: "#5a8a8a",
+        white: "#b5b0a8",
+        brightBlack: "#5a5a5a",
+        brightRed: "#d47a74",
+        brightGreen: "#72a67a",
+        brightYellow: "#d4b85a",
+        brightBlue: "#85a8c4",
+        brightMagenta: "#a896c0",
+        brightCyan: "#74a8a8",
+        brightWhite: "#e8e4de",
       },
       fontSize: 13,
       fontFamily: "'JetBrains Mono', 'SF Mono', Menlo, monospace",
@@ -48,7 +63,11 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
     const syncSize = () => {
       const dims = fitAddon.proposeDimensions();
       if (dims) {
-        invoke("resize_pty", { sessionId, rows: dims.rows, cols: dims.cols }).catch(console.error);
+        invoke("resize_pty", {
+          sessionId,
+          rows: dims.rows,
+          cols: dims.cols,
+        }).catch(console.error);
       }
     };
     syncSize();
@@ -66,7 +85,10 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
       unlistenRef.current = unlisten;
     });
 
-    const observer = new ResizeObserver(() => { fitAddon.fit(); syncSize(); });
+    const observer = new ResizeObserver(() => {
+      fitAddon.fit();
+      syncSize();
+    });
     observer.observe(containerRef.current);
 
     return () => {
@@ -79,7 +101,17 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
 
   if (!sessionId) {
     return (
-      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-secondary)", fontSize: 13 }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-ishi)",
+          background: "var(--color-paper)",
+          fontSize: 13,
+        }}
+      >
         Select a session from the sidebar, or press + to create one.
       </div>
     );
@@ -89,7 +121,14 @@ export function TerminalPane({ sessionId, tmuxSession: _tmuxSession, active }: P
     <div
       className="terminal-container"
       ref={containerRef}
-      style={{ flex: 1, height: "100%", padding: 4, overflow: "hidden", display: active ? "block" : "none" }}
+      style={{
+        flex: 1,
+        height: "100%",
+        padding: 4,
+        overflow: "hidden",
+        display: active ? "block" : "none",
+        background: "#1a1a1a",
+      }}
     />
   );
 }

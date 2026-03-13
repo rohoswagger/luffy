@@ -243,7 +243,7 @@ export default function App() {
                   style={{
                     background: "var(--yellow)",
                     borderColor: "var(--yellow)",
-                    color: "#000",
+                    color: "var(--color-paper)",
                     fontWeight: 700,
                   }}
                 >

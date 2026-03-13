@@ -60,7 +60,7 @@ export function AutoResponsePanel({ open, onClose }: Props) {
   const overlayStyle: React.CSSProperties = {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.5)",
+    background: "rgba(249,248,246,0.7)",
     zIndex: 200,
     display: "flex",
     alignItems: "flex-start",
@@ -82,11 +82,11 @@ export function AutoResponsePanel({ open, onClose }: Props) {
       <div
         style={{
           width: 540,
-          background: "var(--bg-secondary)",
-          border: "1px solid var(--border)",
+          background: "var(--color-paper)",
+          border: "0.5px solid var(--color-kage)",
           borderRadius: 8,
           overflow: "hidden",
-          boxShadow: "0 24px 48px rgba(0,0,0,0.4)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -233,7 +233,7 @@ export function AutoResponsePanel({ open, onClose }: Props) {
               ...inputStyle,
               background: "var(--accent-blue)",
               border: "none",
-              color: "#000",
+              color: "var(--color-paper)",
               fontWeight: 600,
               cursor: "pointer",
               flexShrink: 0,
