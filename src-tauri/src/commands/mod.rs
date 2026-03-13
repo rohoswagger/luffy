@@ -464,6 +464,52 @@ pub async fn mark_session_done(
     Ok(())
 }
 
+/// Internal restart logic: kill session and recreate with same config.
+/// Used by both the `restart_session` command and the auto-restart background loop.
+pub async fn restart_session_internal(
+    session_mgr: &Arc<crate::session::SessionManager>,
+    pty_mgr: &crate::pty_stream::PtyManager,
+    app: &AppHandle,
+    session_id: &str,
+) -> Result<SessionDto, String> {
+    let args = session_mgr
+        .get_restart_args(session_id)
+        .ok_or_else(|| "Session not found".to_string())?;
+
+    // Kill the old session (ignore error if already dead)
+    pty_mgr.detach(session_id);
+    let _ = session_mgr.kill_session(session_id);
+
+    // Create a new session with the same config
+    let mut session = session_mgr
+        .create_session(&args.name, args.agent_type, args.working_dir.as_deref())
+        .map_err(|e| e.to_string())?;
+
+    if args.cost_budget_usd > 0.0 {
+        session_mgr.set_cost_budget(&session.id, args.cost_budget_usd);
+        session.cost_budget_usd = args.cost_budget_usd;
+    }
+
+    persist_startup_command(session_mgr, &mut session, args.startup_command.as_deref());
+
+    let session_id_new = session.id.clone();
+    let tmux_name = session.tmux_session.clone();
+    let dto = SessionDto::from(session);
+
+    attach_pty(
+        pty_mgr,
+        session_mgr.clone(),
+        app.clone(),
+        session_id_new.clone(),
+        &tmux_name,
+    )?;
+
+    send_startup_command(pty_mgr, &session_id_new, args.startup_command.as_deref()).await;
+    emit_updated_sessions(app, session_mgr);
+
+    Ok(dto)
+}
+
 /// Restart a session: kill it and create a new one with the same config.
 /// Returns the new SessionDto. Useful when a session crashes (ERROR status).
 #[tauri::command]
@@ -472,55 +518,7 @@ pub async fn restart_session(
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<SessionDto, String> {
-    let args = state
-        .session_mgr
-        .get_restart_args(&session_id)
-        .ok_or_else(|| "Session not found".to_string())?;
-
-    // Kill the old session (ignore error if already dead)
-    state.pty_mgr.detach(&session_id);
-    let _ = state.session_mgr.kill_session(&session_id);
-
-    // Create a new session with the same config
-    let mut session = state
-        .session_mgr
-        .create_session(&args.name, args.agent_type, args.working_dir.as_deref())
-        .map_err(|e| e.to_string())?;
-
-    if args.cost_budget_usd > 0.0 {
-        state
-            .session_mgr
-            .set_cost_budget(&session.id, args.cost_budget_usd);
-        session.cost_budget_usd = args.cost_budget_usd;
-    }
-
-    persist_startup_command(
-        &state.session_mgr,
-        &mut session,
-        args.startup_command.as_deref(),
-    );
-
-    let session_id_new = session.id.clone();
-    let tmux_name = session.tmux_session.clone();
-    let dto = SessionDto::from(session);
-
-    attach_pty(
-        &state.pty_mgr,
-        state.session_mgr.clone(),
-        app.clone(),
-        session_id_new.clone(),
-        &tmux_name,
-    )?;
-
-    send_startup_command(
-        &state.pty_mgr,
-        &session_id_new,
-        args.startup_command.as_deref(),
-    )
-    .await;
-    emit_updated_sessions(&app, &state.session_mgr);
-
-    Ok(dto)
+    restart_session_internal(&state.session_mgr, &state.pty_mgr, &app, &session_id).await
 }
 
 /// Resize a session's PTY to match the frontend terminal dimensions.
