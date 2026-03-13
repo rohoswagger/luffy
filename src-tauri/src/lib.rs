@@ -54,6 +54,24 @@ pub fn run() {
                         }
                     }
 
+                    // Kill sessions that have exceeded their cost budget
+                    let over_budget: Vec<_> = session_mgr.list_sessions()
+                        .into_iter()
+                        .filter(|s| s.cost_budget_usd > 0.0 && s.total_cost_usd > s.cost_budget_usd)
+                        .collect();
+                    for s in over_budget {
+                        pty_mgr.detach(&s.id);
+                        if let Some(ref wt_path) = s.worktree_path {
+                            if wt_path.contains("/.worktrees/") {
+                                if let Some(repo_path) = wt_path.rfind("/.worktrees/").map(|i| &wt_path[..i]) {
+                                    let _ = git::remove_worktree(repo_path, wt_path);
+                                }
+                            }
+                        }
+                        let _ = session_mgr.kill_session(&s.id);
+                        changed = true;
+                    }
+
                     // Auto-respond: check WAITING sessions against configured patterns
                     // Debounce: only respond once per unique (session, preview) pair
                     let patterns = auto_respond::load_auto_responses();
