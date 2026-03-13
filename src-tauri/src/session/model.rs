@@ -46,6 +46,7 @@ pub struct Session {
     pub branch: Option<String>,
     pub agent_type: AgentType,
     pub total_cost_usd: f64,
+    pub note: Option<String>,
     pub events: Vec<SessionEvent>,
 }
 
@@ -64,6 +65,7 @@ impl Session {
             branch: None,
             agent_type,
             total_cost_usd: 0.0,
+            note: None,
             events: vec![SessionEvent::created()],
         }
     }

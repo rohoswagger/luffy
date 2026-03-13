@@ -63,6 +63,7 @@ impl SessionManager {
                     AgentType::Generic => "generic".to_string(),
                 },
                 working_dir: s.worktree_path.clone(),
+                note: s.note.clone(),
             })
             .collect();
         let _ = crate::session_meta::save_meta(&sessions);
@@ -173,6 +174,7 @@ impl SessionManager {
                     _ => AgentType::Generic,
                 }).unwrap_or(AgentType::Generic);
                 let working_dir = meta.and_then(|m| m.working_dir.clone());
+                let note = meta.and_then(|m| m.note.clone());
                 let (branch, worktree) = working_dir.as_deref()
                     .map(crate::git::detect_git_info)
                     .unwrap_or((None, None));
@@ -188,6 +190,7 @@ impl SessionManager {
                     branch,
                     agent_type,
                     total_cost_usd: 0.0,
+                    note,
                     events: vec![SessionEvent::created()],
                 };
                 sessions.insert(session.id.clone(), session.clone());
@@ -211,6 +214,21 @@ impl SessionManager {
         };
         if renamed { self.persist_meta(); }
         renamed
+    }
+
+    /// Set or clear a freeform note on a session.
+    pub fn set_session_note(&self, session_id: &str, note: &str) -> bool {
+        let updated = {
+            let mut sessions = self.sessions.lock().unwrap();
+            if let Some(s) = sessions.get_mut(session_id) {
+                s.note = if note.is_empty() { None } else { Some(note.to_string()) };
+                true
+            } else {
+                false
+            }
+        };
+        if updated { self.persist_meta(); }
+        updated
     }
 
     /// Remove a session from the registry without killing the tmux session.
@@ -447,5 +465,37 @@ mod tests {
         assert_eq!(dead[0], dead_id);
         assert_eq!(mgr.get_session(&alive_id).unwrap().status, AgentStatus::WaitingForInput);
         assert_eq!(mgr.get_session(&dead_id).unwrap().status, AgentStatus::Error);
+    }
+
+    #[test]
+    fn set_session_note_persists_note() {
+        let mgr = SessionManager::new();
+        let s = Session::new("my-session", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        assert!(mgr.set_session_note(&id, "working on auth refactor"));
+        assert_eq!(
+            mgr.get_session(&id).unwrap().note.as_deref(),
+            Some("working on auth refactor")
+        );
+    }
+
+    #[test]
+    fn set_session_note_returns_false_for_missing_session() {
+        let mgr = SessionManager::new();
+        assert!(!mgr.set_session_note("nonexistent", "note"));
+    }
+
+    #[test]
+    fn set_session_note_empty_clears_note() {
+        let mgr = SessionManager::new();
+        let s = Session::new("my-session", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        mgr.set_session_note(&id, "some note");
+        mgr.set_session_note(&id, "");
+        assert!(mgr.get_session(&id).unwrap().note.is_none());
     }
 }

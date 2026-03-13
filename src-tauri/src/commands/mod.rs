@@ -24,6 +24,7 @@ pub struct SessionDto {
     pub created_at: String,
     pub last_activity: String,
     pub total_cost_usd: f64,
+    pub note: Option<String>,
 }
 
 impl From<Session> for SessionDto {
@@ -43,6 +44,7 @@ impl From<Session> for SessionDto {
             created_at: s.created_at.to_rfc3339(),
             last_activity: s.last_activity.to_rfc3339(),
             total_cost_usd: s.total_cost_usd,
+            note: s.note,
         }
     }
 }
@@ -176,6 +178,23 @@ pub async fn rename_session(
         return Err("Name cannot be empty".to_string());
     }
     if !state.session_mgr.rename_session(&session_id, &new_name) {
+        return Err("Session not found".to_string());
+    }
+    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
+        .into_iter().map(SessionDto::from).collect();
+    let _ = app.emit("sessions-updated", sessions);
+    Ok(())
+}
+
+/// Set a freeform note on a session (empty string clears it).
+#[tauri::command]
+pub async fn set_session_note(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    session_id: String,
+    note: String,
+) -> Result<(), String> {
+    if !state.session_mgr.set_session_note(&session_id, &note) {
         return Err("Session not found".to_string());
     }
     let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()

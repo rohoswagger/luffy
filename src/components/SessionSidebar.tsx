@@ -167,6 +167,14 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                 ✕
               </button>
             </div>
+            {session.note && (
+              <div
+                title="Edit note"
+                style={{ fontSize: 10, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontStyle: "italic" }}
+              >
+                {session.note}
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <StatusBadge status={session.status} />
               {isSessionStuck(session, now) && (

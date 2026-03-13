@@ -10,6 +10,8 @@ pub struct SessionMeta {
     pub name: String,
     pub agent_type: String,
     pub working_dir: Option<String>,
+    #[serde(default)]
+    pub note: Option<String>,
 }
 
 fn meta_path() -> PathBuf {
@@ -66,6 +68,7 @@ mod tests {
                     name: "my-feature".to_string(),
                     agent_type: "claude-code".to_string(),
                     working_dir: Some("/repo".to_string()),
+                    note: None,
                 },
             ];
             save_meta(&meta).unwrap();
@@ -80,11 +83,11 @@ mod tests {
     #[test]
     fn save_overwrites_previous() {
         with_temp_home(|| {
-            let m1 = vec![SessionMeta { tmux_session: "t1".into(), name: "s1".into(), agent_type: "aider".into(), working_dir: None }];
+            let m1 = vec![SessionMeta { tmux_session: "t1".into(), name: "s1".into(), agent_type: "aider".into(), working_dir: None, note: None }];
             save_meta(&m1).unwrap();
             let m2 = vec![
-                SessionMeta { tmux_session: "t1".into(), name: "s1".into(), agent_type: "aider".into(), working_dir: None },
-                SessionMeta { tmux_session: "t2".into(), name: "s2".into(), agent_type: "generic".into(), working_dir: None },
+                SessionMeta { tmux_session: "t1".into(), name: "s1".into(), agent_type: "aider".into(), working_dir: None, note: None },
+                SessionMeta { tmux_session: "t2".into(), name: "s2".into(), agent_type: "generic".into(), working_dir: None, note: None },
             ];
             save_meta(&m2).unwrap();
             assert_eq!(load_meta().len(), 2);
