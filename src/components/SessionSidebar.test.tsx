@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { SessionSidebar } from "./SessionSidebar";
 import type { SessionData } from "../store/sessions";
 
+const mockInvoke = vi.fn().mockResolvedValue(undefined);
 vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn().mockResolvedValue(undefined),
+  invoke: (...args: unknown[]) => mockInvoke(...args),
 }));
 
 const mockSessions: SessionData[] = [
@@ -43,6 +44,7 @@ const mockSessions: SessionData[] = [
 ];
 
 describe("SessionSidebar", () => {
+  beforeEach(() => mockInvoke.mockClear());
   it("renders session names", () => {
     render(
       <SessionSidebar
@@ -444,5 +446,102 @@ describe("SessionSidebar", () => {
     );
     fireEvent.click(screen.getByTitle(/clear done/i));
     expect(onClearDone).toHaveBeenCalled();
+  });
+
+  it("commits rename on Enter and calls invoke", () => {
+    render(
+      <SessionSidebar
+        sessions={mockSessions}
+        activeId={null}
+        onSelect={vi.fn()}
+        onNewSession={vi.fn()}
+        onKill={vi.fn()}
+      />,
+    );
+    fireEvent.doubleClick(screen.getByText("feature-auth"));
+    const input = screen.getByDisplayValue("feature-auth");
+    fireEvent.change(input, { target: { value: "renamed-session" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(mockInvoke).toHaveBeenCalledWith("rename_session", {
+      sessionId: "1",
+      newName: "renamed-session",
+    });
+    // Input should be gone after commit
+    expect(screen.queryByDisplayValue("renamed-session")).toBeNull();
+  });
+
+  it("commits rename on blur", () => {
+    render(
+      <SessionSidebar
+        sessions={mockSessions}
+        activeId={null}
+        onSelect={vi.fn()}
+        onNewSession={vi.fn()}
+        onKill={vi.fn()}
+      />,
+    );
+    fireEvent.doubleClick(screen.getByText("feature-auth"));
+    const input = screen.getByDisplayValue("feature-auth");
+    fireEvent.change(input, { target: { value: "blur-renamed" } });
+    fireEvent.blur(input);
+    expect(mockInvoke).toHaveBeenCalledWith("rename_session", {
+      sessionId: "1",
+      newName: "blur-renamed",
+    });
+  });
+
+  it("shows note edit input on double-click of note text", () => {
+    render(
+      <SessionSidebar
+        sessions={mockSessions}
+        activeId={null}
+        onSelect={vi.fn()}
+        onNewSession={vi.fn()}
+        onKill={vi.fn()}
+      />,
+    );
+    fireEvent.doubleClick(screen.getByText("fixing the login regression"));
+    expect(
+      screen.getByDisplayValue("fixing the login regression"),
+    ).toBeInTheDocument();
+  });
+
+  it("commits note on Enter and calls invoke", () => {
+    render(
+      <SessionSidebar
+        sessions={mockSessions}
+        activeId={null}
+        onSelect={vi.fn()}
+        onNewSession={vi.fn()}
+        onKill={vi.fn()}
+      />,
+    );
+    fireEvent.doubleClick(screen.getByText("fixing the login regression"));
+    const input = screen.getByDisplayValue("fixing the login regression");
+    fireEvent.change(input, { target: { value: "updated note" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(mockInvoke).toHaveBeenCalledWith("set_session_note", {
+      sessionId: "2",
+      note: "updated note",
+    });
+  });
+
+  it("cancels note edit on Escape without calling invoke", () => {
+    render(
+      <SessionSidebar
+        sessions={mockSessions}
+        activeId={null}
+        onSelect={vi.fn()}
+        onNewSession={vi.fn()}
+        onKill={vi.fn()}
+      />,
+    );
+    fireEvent.doubleClick(screen.getByText("fixing the login regression"));
+    const input = screen.getByDisplayValue("fixing the login regression");
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(mockInvoke).not.toHaveBeenCalledWith(
+      "set_session_note",
+      expect.anything(),
+    );
   });
 });

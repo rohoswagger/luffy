@@ -33,6 +33,7 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   );
   const [createWorktree, setCreateWorktree] = useState(false);
   const [costBudget, setCostBudget] = useState(0);
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     setStartupCommand(DEFAULT_COMMANDS[agentType] ?? "");
@@ -48,6 +49,7 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
       setStartupCommand(DEFAULT_COMMANDS["claude-code"]);
       setCreateWorktree(false);
       setCostBudget(0);
+      setSubmitted(false);
     }
   }, [open]);
 
@@ -55,6 +57,8 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitted) return;
+    setSubmitted(true);
     const baseName = name.trim() || "session";
     const dir = workingDir.trim() || null;
     if (count > 1) {
@@ -221,7 +225,11 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
             >
               Save template
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={submitted}
+            >
               Create{count > 1 ? ` ×${count}` : ""}
             </button>
           </div>

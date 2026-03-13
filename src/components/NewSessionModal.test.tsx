@@ -91,6 +91,14 @@ describe("NewSessionModal", () => {
     expect(screen.getByPlaceholderText(/session name/i)).toHaveValue("");
   });
 
+  it("disables Create button after submit to prevent double-click", () => {
+    const onCreate = vi.fn();
+    render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);
+    fireEvent.click(screen.getByText(/create/i));
+    // After first submit, button should be disabled
+    expect(screen.getByText(/create/i).closest("button")).toBeDisabled();
+  });
+
   it("calls onCreate N times with indexed names when count > 1", () => {
     const onCreate = vi.fn();
     render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);
