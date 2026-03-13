@@ -48,6 +48,7 @@ const AutoResponsePanel = lazy(() =>
 );
 import { useSessionStore } from "./store/sessions";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import {
   useTauriEvents,
   createSession,
@@ -242,6 +243,29 @@ export default function App() {
       setShowEventLog(false);
     },
   });
+
+  // Listen for native menu actions (macOS intercepts Cmd+N/W/T at OS level)
+  useEffect(() => {
+    const unlisten = listen<string>("menu-action", (event) => {
+      switch (event.payload) {
+        case "new-session":
+          handleQuickCreate();
+          break;
+        case "new-session-advanced":
+          setShowNewModal(true);
+          break;
+        case "kill-session":
+          if (activeSessionId) handleKill(activeSessionId);
+          break;
+        case "templates":
+          setShowTemplates(true);
+          break;
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [handleQuickCreate, handleKill, activeSessionId]);
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
 

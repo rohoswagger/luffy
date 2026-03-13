@@ -18,7 +18,7 @@ use pty_stream::PtyManager;
 use session::SessionManager;
 use std::sync::Arc;
 use tauri::Manager;
-use tauri::menu::{MenuBuilder, SubmenuBuilder, PredefinedMenuItem};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, SubmenuBuilder, PredefinedMenuItem};
 
 pub struct AppState {
     pub session_mgr: Arc<SessionManager>,
@@ -33,8 +33,25 @@ pub fn run() {
             pty_mgr: Arc::new(PtyManager::new()),
         })
         .setup(|app| {
-            // Custom minimal menu: only essential macOS items (Quit, Copy, Paste, etc.)
-            // This prevents the default menu from intercepting Cmd+N, Cmd+W, Cmd+T, etc.
+            // Custom menu with accelerators that forward to the webview as events.
+            // macOS intercepts Cmd+N at the native level, so we must own it in the menu.
+            let new_session = MenuItemBuilder::new("New Session")
+                .id("new-session")
+                .accelerator("CmdOrCtrl+N")
+                .build(app)?;
+            let new_session_adv = MenuItemBuilder::new("New Session (Advanced)")
+                .id("new-session-advanced")
+                .accelerator("CmdOrCtrl+Shift+N")
+                .build(app)?;
+            let kill_session = MenuItemBuilder::new("Close Session")
+                .id("kill-session")
+                .accelerator("CmdOrCtrl+W")
+                .build(app)?;
+            let templates = MenuItemBuilder::new("Templates")
+                .id("templates")
+                .accelerator("CmdOrCtrl+T")
+                .build(app)?;
+
             let app_menu = SubmenuBuilder::new(app, "Luffy")
                 .about(None)
                 .separator()
@@ -43,6 +60,13 @@ pub fn run() {
                 .show_all()
                 .separator()
                 .quit()
+                .build()?;
+            let file_menu = SubmenuBuilder::new(app, "File")
+                .item(&new_session)
+                .item(&new_session_adv)
+                .item(&kill_session)
+                .separator()
+                .item(&templates)
                 .build()?;
             let edit_menu = SubmenuBuilder::new(app, "Edit")
                 .undo()
@@ -58,9 +82,16 @@ pub fn run() {
                 .item(&PredefinedMenuItem::fullscreen(app, None)?)
                 .build()?;
             let menu = MenuBuilder::new(app)
-                .items(&[&app_menu, &edit_menu, &window_menu])
+                .items(&[&app_menu, &file_menu, &edit_menu, &window_menu])
                 .build()?;
             app.set_menu(menu)?;
+
+            // Forward menu events to the webview
+            let menu_handle = app.handle().clone();
+            app.on_menu_event(move |_app, event| {
+                let id = event.id().0.as_str();
+                let _ = tauri::Emitter::emit(&menu_handle, "menu-action", id);
+            });
 
             let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
