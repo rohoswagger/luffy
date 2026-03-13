@@ -3,8 +3,15 @@ use std::process::Command;
 /// Sanitize a name for use as a git branch name.
 /// Replaces spaces and special characters with dashes.
 pub fn sanitize_branch_name(name: &str) -> String {
-    let s: String = name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' || c == '.' { c } else { '-' })
+    let s: String = name
+        .chars()
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' || c == '.' {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect();
     // Remove leading/trailing dashes
     s.trim_matches('-').to_string()
@@ -21,12 +28,21 @@ pub fn create_worktree(repo_path: &str, branch: &str) -> Result<String, String> 
     let worktree_dir = std::path::Path::new(repo_path)
         .join(".worktrees")
         .join(&branch);
-    let worktree_path = worktree_dir.to_str()
+    let worktree_path = worktree_dir
+        .to_str()
         .ok_or_else(|| "Invalid path".to_string())?
         .to_string();
 
     let output = Command::new("git")
-        .args(["-C", repo_path, "worktree", "add", "-b", &branch, &worktree_path])
+        .args([
+            "-C",
+            repo_path,
+            "worktree",
+            "add",
+            "-b",
+            &branch,
+            &worktree_path,
+        ])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -43,7 +59,14 @@ pub fn create_worktree(repo_path: &str, branch: &str) -> Result<String, String> 
 pub fn remove_worktree(repo_path: &str, worktree_path: &str) -> Result<(), String> {
     // First remove the worktree registration
     let output = Command::new("git")
-        .args(["-C", repo_path, "worktree", "remove", "--force", worktree_path])
+        .args([
+            "-C",
+            repo_path,
+            "worktree",
+            "remove",
+            "--force",
+            worktree_path,
+        ])
         .output()
         .map_err(|e| e.to_string())?;
 
@@ -68,7 +91,11 @@ pub fn detect_git_info(dir: &str) -> (Option<String>, Option<String>) {
         .filter(|o| o.status.success())
         .and_then(|o| {
             let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
-            if s.is_empty() { None } else { Some(s) }
+            if s.is_empty() {
+                None
+            } else {
+                Some(s)
+            }
         });
 
     let worktree = Command::new("git")
@@ -78,7 +105,11 @@ pub fn detect_git_info(dir: &str) -> (Option<String>, Option<String>) {
         .filter(|o| o.status.success())
         .and_then(|o| {
             let s = String::from_utf8_lossy(&o.stdout).trim().to_string();
-            if s.is_empty() { None } else { Some(s) }
+            if s.is_empty() {
+                None
+            } else {
+                Some(s)
+            }
         });
 
     (branch, worktree)
@@ -91,11 +122,23 @@ mod tests {
     use std::process::Command as Cmd;
 
     fn init_git_repo(dir: &std::path::Path) {
-        Cmd::new("git").args(["init"]).current_dir(dir).output().unwrap();
-        Cmd::new("git").args(["checkout", "-b", "main"]).current_dir(dir).output().unwrap();
+        Cmd::new("git")
+            .args(["init"])
+            .current_dir(dir)
+            .output()
+            .unwrap();
+        Cmd::new("git")
+            .args(["checkout", "-b", "main"])
+            .current_dir(dir)
+            .output()
+            .unwrap();
         // Need at least one commit for branch --show-current to return a name
         fs::write(dir.join(".gitkeep"), "").unwrap();
-        Cmd::new("git").args(["add", "."]).current_dir(dir).output().unwrap();
+        Cmd::new("git")
+            .args(["add", "."])
+            .current_dir(dir)
+            .output()
+            .unwrap();
         Cmd::new("git")
             .args(["commit", "--allow-empty-message", "-m", "init"])
             .current_dir(dir)
@@ -159,7 +202,10 @@ mod tests {
         let result = create_worktree(repo, "my-feature");
         assert!(result.is_ok(), "Expected Ok, got {:?}", result);
         let path = result.unwrap();
-        assert!(std::path::Path::new(&path).exists(), "Worktree directory should exist");
+        assert!(
+            std::path::Path::new(&path).exists(),
+            "Worktree directory should exist"
+        );
     }
 
     #[test]

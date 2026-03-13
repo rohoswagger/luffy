@@ -1,9 +1,9 @@
+use super::events::SessionEvent;
+use super::model::{AgentStatus, AgentType, Session};
+use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
-use anyhow::{anyhow, Result};
-use super::model::{Session, AgentStatus, AgentType};
-use super::events::SessionEvent;
 
 #[derive(Clone, Default)]
 pub struct SessionManager {
@@ -18,7 +18,12 @@ impl SessionManager {
     }
 
     /// Create a new tmux session and register it.
-    pub fn create_session(&self, name: &str, agent_type: AgentType, working_dir: Option<&str>) -> Result<Session> {
+    pub fn create_session(
+        &self,
+        name: &str,
+        agent_type: AgentType,
+        working_dir: Option<&str>,
+    ) -> Result<Session> {
         let mut session = Session::new(name, agent_type);
 
         if let Some(dir) = working_dir {
@@ -52,7 +57,10 @@ impl SessionManager {
 
     /// Save current session metadata to disk for persistence across restarts.
     fn persist_meta(&self) {
-        let sessions: Vec<crate::session_meta::SessionMeta> = self.sessions.lock().unwrap()
+        let sessions: Vec<crate::session_meta::SessionMeta> = self
+            .sessions
+            .lock()
+            .unwrap()
             .values()
             .map(|s| crate::session_meta::SessionMeta {
                 tmux_session: s.tmux_session.clone(),
@@ -74,7 +82,8 @@ impl SessionManager {
     pub fn kill_session(&self, session_id: &str) -> Result<()> {
         let tmux_name = {
             let sessions = self.sessions.lock().unwrap();
-            sessions.get(session_id)
+            sessions
+                .get(session_id)
                 .map(|s| s.tmux_session.clone())
                 .ok_or_else(|| anyhow!("Session not found: {}", session_id))?
         };
@@ -141,7 +150,9 @@ impl SessionManager {
 
     /// Get events for a session.
     pub fn get_events(&self, session_id: &str) -> Vec<SessionEvent> {
-        self.sessions.lock().unwrap()
+        self.sessions
+            .lock()
+            .unwrap()
             .get(session_id)
             .map(|s| s.events.clone())
             .unwrap_or_default()
@@ -178,17 +189,21 @@ impl SessionManager {
             let name = line.trim();
             if name.starts_with("luffy-") {
                 let meta = meta_map.get(name);
-                let display_name = meta.map(|m| m.name.as_str())
+                let display_name = meta
+                    .map(|m| m.name.as_str())
                     .unwrap_or_else(|| name.strip_prefix("luffy-").unwrap_or(name));
-                let agent_type = meta.map(|m| match m.agent_type.as_str() {
-                    "claude-code" => AgentType::ClaudeCode,
-                    "aider" => AgentType::Aider,
-                    _ => AgentType::Generic,
-                }).unwrap_or(AgentType::Generic);
+                let agent_type = meta
+                    .map(|m| match m.agent_type.as_str() {
+                        "claude-code" => AgentType::ClaudeCode,
+                        "aider" => AgentType::Aider,
+                        _ => AgentType::Generic,
+                    })
+                    .unwrap_or(AgentType::Generic);
                 let working_dir = meta.and_then(|m| m.working_dir.clone());
                 let note = meta.and_then(|m| m.note.clone());
                 let cost_budget_usd = meta.map(|m| m.cost_budget_usd).unwrap_or(0.0);
-                let (branch, worktree) = working_dir.as_deref()
+                let (branch, worktree) = working_dir
+                    .as_deref()
                     .map(crate::git::detect_git_info)
                     .unwrap_or((None, None));
 
@@ -227,7 +242,9 @@ impl SessionManager {
                 false
             }
         };
-        if renamed { self.persist_meta(); }
+        if renamed {
+            self.persist_meta();
+        }
         renamed
     }
 
@@ -236,13 +253,19 @@ impl SessionManager {
         let updated = {
             let mut sessions = self.sessions.lock().unwrap();
             if let Some(s) = sessions.get_mut(session_id) {
-                s.note = if note.is_empty() { None } else { Some(note.to_string()) };
+                s.note = if note.is_empty() {
+                    None
+                } else {
+                    Some(note.to_string())
+                };
                 true
             } else {
                 false
             }
         };
-        if updated { self.persist_meta(); }
+        if updated {
+            self.persist_meta();
+        }
         updated
     }
 
@@ -255,7 +278,9 @@ impl SessionManager {
     /// Return IDs of DONE/ERROR sessions whose last_activity is older than `max_age`.
     pub fn stale_terminal_sessions(&self, max_age: chrono::Duration) -> Vec<String> {
         let cutoff = chrono::Utc::now() - max_age;
-        self.sessions.lock().unwrap()
+        self.sessions
+            .lock()
+            .unwrap()
             .values()
             .filter(|s| matches!(s.status, AgentStatus::Done | AgentStatus::Error))
             .filter(|s| s.last_activity < cutoff)
@@ -277,8 +302,14 @@ impl SessionManager {
     pub fn mark_dead_sessions(&self, alive_check: &dyn Fn(&str) -> bool) -> Vec<String> {
         let to_check: Vec<(String, String)> = {
             let sessions = self.sessions.lock().unwrap();
-            sessions.values()
-                .filter(|s| matches!(s.status, AgentStatus::Thinking | AgentStatus::WaitingForInput | AgentStatus::Idle))
+            sessions
+                .values()
+                .filter(|s| {
+                    matches!(
+                        s.status,
+                        AgentStatus::Thinking | AgentStatus::WaitingForInput | AgentStatus::Idle
+                    )
+                })
                 .map(|s| (s.id.clone(), s.tmux_session.clone()))
                 .collect()
         };
@@ -296,7 +327,9 @@ impl SessionManager {
     /// Update the last output preview for a session (ANSI-stripped last meaningful line).
     pub fn update_output_preview(&self, session_id: &str, raw_chunk: &str) {
         let preview = extract_preview(raw_chunk);
-        if preview.is_empty() { return; }
+        if preview.is_empty() {
+            return;
+        }
         let mut sessions = self.sessions.lock().unwrap();
         if let Some(s) = sessions.get_mut(session_id) {
             s.last_output_preview = preview;
@@ -309,7 +342,8 @@ pub fn extract_preview(raw: &str) -> String {
     // Remove ANSI/VT escape sequences (CSI sequences including private mode params) and carriage returns
     let ansi_re = regex::Regex::new(r"\x1b\[[0-9;?]*[A-Za-z]|\x1b[A-Za-z]|\r").unwrap();
     let clean = ansi_re.replace_all(raw, "");
-    clean.lines()
+    clean
+        .lines()
         .map(|l| l.trim())
         .rfind(|l| !l.is_empty())
         .map(|l| if l.len() > 80 { &l[..80] } else { l })
@@ -392,13 +426,19 @@ mod tests {
         old_done.status = AgentStatus::Done;
         old_done.last_activity = chrono::Utc::now() - chrono::Duration::hours(2);
         let id_old = old_done.id.clone();
-        mgr.sessions.lock().unwrap().insert(id_old.clone(), old_done);
+        mgr.sessions
+            .lock()
+            .unwrap()
+            .insert(id_old.clone(), old_done);
 
         // Insert recent DONE session (just now)
         let mut recent_done = Session::new("recent-done", AgentType::Generic);
         recent_done.status = AgentStatus::Done;
         let id_recent = recent_done.id.clone();
-        mgr.sessions.lock().unwrap().insert(id_recent.clone(), recent_done);
+        mgr.sessions
+            .lock()
+            .unwrap()
+            .insert(id_recent.clone(), recent_done);
 
         let stale = mgr.stale_terminal_sessions(chrono::Duration::hours(1));
         assert_eq!(stale.len(), 1);
@@ -413,7 +453,10 @@ mod tests {
         old_thinking.status = AgentStatus::Thinking;
         old_thinking.last_activity = chrono::Utc::now() - chrono::Duration::hours(2);
         let id = old_thinking.id.clone();
-        mgr.sessions.lock().unwrap().insert(id.clone(), old_thinking);
+        mgr.sessions
+            .lock()
+            .unwrap()
+            .insert(id.clone(), old_thinking);
 
         let stale = mgr.stale_terminal_sessions(chrono::Duration::hours(1));
         assert!(stale.is_empty());
@@ -501,8 +544,14 @@ mod tests {
         let dead = mgr.mark_dead_sessions(&|name| name == alive_tmux);
         assert_eq!(dead.len(), 1);
         assert_eq!(dead[0], dead_id);
-        assert_eq!(mgr.get_session(&alive_id).unwrap().status, AgentStatus::WaitingForInput);
-        assert_eq!(mgr.get_session(&dead_id).unwrap().status, AgentStatus::Error);
+        assert_eq!(
+            mgr.get_session(&alive_id).unwrap().status,
+            AgentStatus::WaitingForInput
+        );
+        assert_eq!(
+            mgr.get_session(&dead_id).unwrap().status,
+            AgentStatus::Error
+        );
     }
 
     #[test]
@@ -566,7 +615,10 @@ mod tests {
         mgr.sessions.lock().unwrap().insert(id.clone(), s);
 
         mgr.update_output_preview(&id, "\x1b[1mRunning tests...\x1b[0m\n");
-        assert_eq!(mgr.get_session(&id).unwrap().last_output_preview, "Running tests...");
+        assert_eq!(
+            mgr.get_session(&id).unwrap().last_output_preview,
+            "Running tests..."
+        );
     }
 
     #[test]

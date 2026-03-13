@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "type", content = "data")]
@@ -17,7 +17,10 @@ pub struct SessionEvent {
 
 impl SessionEvent {
     pub fn created() -> Self {
-        SessionEvent { timestamp: Utc::now(), kind: EventKind::Created }
+        SessionEvent {
+            timestamp: Utc::now(),
+            kind: EventKind::Created,
+        }
     }
 
     pub fn status_changed(from: &str, to: &str) -> Self {
@@ -31,7 +34,10 @@ impl SessionEvent {
     }
 
     pub fn cost_updated(cost_usd: f64) -> Self {
-        SessionEvent { timestamp: Utc::now(), kind: EventKind::CostUpdated { cost_usd } }
+        SessionEvent {
+            timestamp: Utc::now(),
+            kind: EventKind::CostUpdated { cost_usd },
+        }
     }
 }
 

@@ -1,15 +1,16 @@
-pub mod session;
-pub mod status;
-pub mod commands;
-pub mod pty_stream;
-pub mod git;
-pub mod templates;
-pub mod cost;
-pub mod session_meta;
 pub mod auto_respond;
+pub mod commands;
+pub mod cost;
+pub mod git;
+pub mod pty_stream;
+pub mod session;
+pub mod session_meta;
+pub mod status;
+pub mod stuck_detector;
+pub mod templates;
 
-use session::SessionManager;
 use pty_stream::PtyManager;
+use session::SessionManager;
 use std::sync::Arc;
 use tauri::Manager;
 
@@ -37,7 +38,10 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 let mut tick = 0u32;
                 // Track last auto-respond per session: session_id → last preview that was responded to
-                let mut last_auto_responded: std::collections::HashMap<String, String> = std::collections::HashMap::new();
+                let mut last_auto_responded: std::collections::HashMap<String, String> =
+                    std::collections::HashMap::new();
+                // Detect THINKING sessions stuck with no output change for 15 minutes
+                let mut stuck_detector = stuck_detector::StuckDetector::new(15 * 60);
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                     tick += 1;
@@ -47,7 +51,8 @@ pub fn run() {
 
                     // Every 60s (6 ticks), auto-clean stale DONE/ERROR sessions (>30 min old)
                     if tick.is_multiple_of(6) {
-                        let stale = session_mgr.stale_terminal_sessions(chrono::Duration::minutes(30));
+                        let stale =
+                            session_mgr.stale_terminal_sessions(chrono::Duration::minutes(30));
                         for id in stale {
                             let _ = session_mgr.remove_session(&id);
                             changed = true;
@@ -55,7 +60,8 @@ pub fn run() {
                     }
 
                     // Kill sessions that have exceeded their cost budget
-                    let over_budget: Vec<_> = session_mgr.list_sessions()
+                    let over_budget: Vec<_> = session_mgr
+                        .list_sessions()
                         .into_iter()
                         .filter(|s| s.cost_budget_usd > 0.0 && s.total_cost_usd > s.cost_budget_usd)
                         .collect();
@@ -63,7 +69,9 @@ pub fn run() {
                         pty_mgr.detach(&s.id);
                         if let Some(ref wt_path) = s.worktree_path {
                             if wt_path.contains("/.worktrees/") {
-                                if let Some(repo_path) = wt_path.rfind("/.worktrees/").map(|i| &wt_path[..i]) {
+                                if let Some(repo_path) =
+                                    wt_path.rfind("/.worktrees/").map(|i| &wt_path[..i])
+                                {
                                     let _ = git::remove_worktree(repo_path, wt_path);
                                 }
                             }
@@ -76,22 +84,28 @@ pub fn run() {
                     // Debounce: only respond once per unique (session, preview) pair
                     let patterns = auto_respond::load_auto_responses();
                     if !patterns.is_empty() {
-                        let waiting: Vec<_> = session_mgr.list_sessions()
+                        let waiting: Vec<_> = session_mgr
+                            .list_sessions()
                             .into_iter()
                             .filter(|s| matches!(s.status, session::AgentStatus::WaitingForInput))
                             .collect();
                         // Remove entries for sessions no longer WAITING
-                        let waiting_ids: std::collections::HashSet<_> = waiting.iter().map(|s| s.id.clone()).collect();
+                        let waiting_ids: std::collections::HashSet<_> =
+                            waiting.iter().map(|s| s.id.clone()).collect();
                         last_auto_responded.retain(|id, _| waiting_ids.contains(id));
 
                         for s in waiting {
-                            let already_responded = last_auto_responded.get(&s.id)
+                            let already_responded = last_auto_responded
+                                .get(&s.id)
                                 .map(|prev| prev == &s.last_output_preview)
                                 .unwrap_or(false);
-                            if already_responded { continue; }
+                            if already_responded {
+                                continue;
+                            }
 
                             // Use last 500 chars of PTY output for richer pattern matching
-                            let check_text = pty_mgr.get_output(&s.id)
+                            let check_text = pty_mgr
+                                .get_output(&s.id)
                                 .map(|o| {
                                     let bytes = o.as_bytes();
                                     let start = bytes.len().saturating_sub(500);
@@ -99,17 +113,51 @@ pub fn run() {
                                 })
                                 .unwrap_or_else(|| s.last_output_preview.clone());
 
-                            if let Some(response) = auto_respond::check_auto_respond(&check_text, &patterns) {
+                            if let Some(response) =
+                                auto_respond::check_auto_respond(&check_text, &patterns)
+                            {
                                 let input = format!("{}\n", response);
                                 let _ = pty_mgr.write_input(&s.id, &input);
-                                last_auto_responded.insert(s.id.clone(), s.last_output_preview.clone());
+                                last_auto_responded
+                                    .insert(s.id.clone(), s.last_output_preview.clone());
                             }
                         }
                     }
 
+                    // Stuck THINKING detection: if a THINKING session has had no
+                    // output change for 15 minutes, send Ctrl+C to interrupt it.
+                    let thinking_sessions: Vec<_> = session_mgr
+                        .list_sessions()
+                        .into_iter()
+                        .filter(|s| matches!(s.status, session::AgentStatus::Thinking))
+                        .collect();
+                    let thinking_ids: Vec<String> =
+                        thinking_sessions.iter().map(|s| s.id.clone()).collect();
+                    stuck_detector.retain_only(&thinking_ids);
+                    for s in &thinking_sessions {
+                        let current_output = pty_mgr
+                            .get_output(&s.id)
+                            .map(|o| {
+                                let bytes = o.as_bytes();
+                                let start = bytes.len().saturating_sub(200);
+                                o[start..].to_string()
+                            })
+                            .unwrap_or_default();
+                        if stuck_detector.check(&s.id, &current_output) {
+                            let _ = pty_mgr.write_input(&s.id, "\x03");
+                            session_mgr.update_status(&s.id, session::AgentStatus::Idle);
+                            let _ = tauri::Emitter::emit(&app_handle, "session-stuck", &s.id);
+                            stuck_detector.reset(&s.id);
+                            changed = true;
+                        }
+                    }
+
                     if changed {
-                        let sessions: Vec<commands::SessionDto> = session_mgr.list_sessions()
-                            .into_iter().map(commands::SessionDto::from).collect();
+                        let sessions: Vec<commands::SessionDto> = session_mgr
+                            .list_sessions()
+                            .into_iter()
+                            .map(commands::SessionDto::from)
+                            .collect();
                         let _ = tauri::Emitter::emit(&app_handle, "sessions-updated", sessions);
                     }
                 }

@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
 use super::events::SessionEvent;
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum AgentStatus {
@@ -13,7 +13,9 @@ pub enum AgentStatus {
 
 #[allow(clippy::derivable_impls)]
 impl Default for AgentStatus {
-    fn default() -> Self { AgentStatus::Idle }
+    fn default() -> Self {
+        AgentStatus::Idle
+    }
 }
 
 impl std::fmt::Display for AgentStatus {
@@ -47,7 +49,7 @@ pub struct Session {
     pub branch: Option<String>,
     pub agent_type: AgentType,
     pub total_cost_usd: f64,
-    pub cost_budget_usd: f64,  // 0.0 = no limit
+    pub cost_budget_usd: f64, // 0.0 = no limit
     pub note: Option<String>,
     pub last_output_preview: String,
     pub events: Vec<SessionEvent>,

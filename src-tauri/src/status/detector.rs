@@ -22,7 +22,16 @@ pub fn detect_status(recent_output: &str) -> Option<AgentStatus> {
 fn is_thinking(output: &str) -> bool {
     let patterns = [
         // Braille spinner characters
-        "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏",
+        "⠋",
+        "⠙",
+        "⠹",
+        "⠸",
+        "⠼",
+        "⠴",
+        "⠦",
+        "⠧",
+        "⠇",
+        "⠏",
         // Generic thinking words
         "Thinking",
         "Working",
@@ -55,18 +64,34 @@ fn is_waiting_for_input(output: &str) -> bool {
 
 fn is_error(output: &str) -> bool {
     // Use specific multi-word patterns to avoid false positives on common single characters
-    let patterns = ["Error:", "error:", "ERROR:", "Failed:", "failed:", "FAILED:"];
-    let recent = if output.len() > 500 { &output[output.len() - 500..] } else { output };
+    let patterns = [
+        "Error:", "error:", "ERROR:", "Failed:", "failed:", "FAILED:",
+    ];
+    let recent = if output.len() > 500 {
+        &output[output.len() - 500..]
+    } else {
+        output
+    };
     patterns.iter().any(|p| recent.contains(p))
 }
 
 fn is_done(output: &str) -> bool {
     // Match agent completion markers specifically (not just "Done" which appears in many contexts)
     let patterns = [
-        "✓ Done", "✔ Done", "Task complete", "All done", "Completed successfully", "LGTM",
-        "No changes to make", "Nothing to do",
+        "✓ Done",
+        "✔ Done",
+        "Task complete",
+        "All done",
+        "Completed successfully",
+        "LGTM",
+        "No changes to make",
+        "Nothing to do",
     ];
-    let recent = if output.len() > 200 { &output[output.len() - 200..] } else { output };
+    let recent = if output.len() > 200 {
+        &output[output.len() - 200..]
+    } else {
+        output
+    };
     patterns.iter().any(|p| recent.contains(p))
 }
 
@@ -146,7 +171,8 @@ mod tests {
 
     #[test]
     fn detects_waiting_claude_code_input_box() {
-        let output = "╭──────────────────────────────────╮\n│ > \n╰──────────────────────────────────╯";
+        let output =
+            "╭──────────────────────────────────╮\n│ > \n╰──────────────────────────────────╯";
         assert_eq!(detect_status(output), Some(AgentStatus::WaitingForInput));
     }
 

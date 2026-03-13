@@ -29,7 +29,8 @@ impl AutoResponse {
 /// Matching is case-insensitive substring search.
 pub fn check_auto_respond(output: &str, patterns: &[AutoResponse]) -> Option<String> {
     let output_lower = output.to_lowercase();
-    patterns.iter()
+    patterns
+        .iter()
         .filter(|p| p.enabled && !p.pattern.is_empty())
         .find(|p| output_lower.contains(&p.pattern.to_lowercase()))
         .map(|p| p.response.clone())
@@ -37,7 +38,10 @@ pub fn check_auto_respond(output: &str, patterns: &[AutoResponse]) -> Option<Str
 
 fn auto_respond_path() -> PathBuf {
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
-    PathBuf::from(home).join(".config").join("luffy").join("auto_responses.json")
+    PathBuf::from(home)
+        .join(".config")
+        .join("luffy")
+        .join("auto_responses.json")
 }
 
 pub fn load_auto_responses() -> Vec<AutoResponse> {
@@ -85,11 +89,36 @@ pub fn toggle_auto_response(id: &str, enabled: bool) -> Result<Vec<AutoResponse>
 
 fn default_patterns() -> Vec<AutoResponse> {
     vec![
-        AutoResponse { id: "default-yn".to_string(), pattern: "[y/n]".to_string(), response: "y".to_string(), enabled: false },
-        AutoResponse { id: "default-yn2".to_string(), pattern: "(y/n)".to_string(), response: "y".to_string(), enabled: false },
-        AutoResponse { id: "default-yn3".to_string(), pattern: "(Y/n)".to_string(), response: "y".to_string(), enabled: false },
-        AutoResponse { id: "default-enter".to_string(), pattern: "press enter to continue".to_string(), response: "".to_string(), enabled: false },
-        AutoResponse { id: "default-do-you-want".to_string(), pattern: "do you want to".to_string(), response: "y".to_string(), enabled: false },
+        AutoResponse {
+            id: "default-yn".to_string(),
+            pattern: "[y/n]".to_string(),
+            response: "y".to_string(),
+            enabled: false,
+        },
+        AutoResponse {
+            id: "default-yn2".to_string(),
+            pattern: "(y/n)".to_string(),
+            response: "y".to_string(),
+            enabled: false,
+        },
+        AutoResponse {
+            id: "default-yn3".to_string(),
+            pattern: "(Y/n)".to_string(),
+            response: "y".to_string(),
+            enabled: false,
+        },
+        AutoResponse {
+            id: "default-enter".to_string(),
+            pattern: "press enter to continue".to_string(),
+            response: "".to_string(),
+            enabled: false,
+        },
+        AutoResponse {
+            id: "default-do-you-want".to_string(),
+            pattern: "do you want to".to_string(),
+            response: "y".to_string(),
+            enabled: false,
+        },
     ]
 }
 
@@ -110,9 +139,7 @@ mod tests {
 
     #[test]
     fn check_auto_respond_matches_substring_case_insensitive() {
-        let patterns = vec![
-            AutoResponse::new("[y/n]", "y"),
-        ];
+        let patterns = vec![AutoResponse::new("[y/n]", "y")];
         let result = check_auto_respond("Do you want to continue? [Y/N]", &patterns);
         assert_eq!(result, Some("y".to_string()));
     }

@@ -14,7 +14,13 @@ pub struct SessionTemplate {
 }
 
 impl SessionTemplate {
-    pub fn new(name: &str, agent_type: &str, working_dir: Option<String>, count: u32, startup_command: Option<String>) -> Self {
+    pub fn new(
+        name: &str,
+        agent_type: &str,
+        working_dir: Option<String>,
+        count: u32,
+        startup_command: Option<String>,
+    ) -> Self {
         SessionTemplate {
             id: uuid::Uuid::new_v4().to_string(),
             name: name.to_string(),

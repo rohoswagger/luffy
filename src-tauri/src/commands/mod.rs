@@ -1,8 +1,8 @@
-use tauri::{AppHandle, Emitter, State};
 use crate::session::{AgentType, Session};
 use crate::AppState;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tauri::{AppHandle, Emitter, State};
 
 #[derive(Serialize, Deserialize)]
 pub struct CreateSessionArgs {
@@ -76,27 +76,30 @@ fn attach_pty(
     let sid = session_id.clone();
     let app_clone = app.clone();
 
-    pty_mgr.attach(session_id, tmux_name, move |chunk| {
-        session_mgr.update_output_preview(&sid, &chunk);
-        if let Some(new_status) = crate::status::detect_status(&chunk) {
-            let prev = session_mgr.get_session(&sid).map(|s| s.status.clone());
-            session_mgr.update_status(&sid, new_status.clone());
-            if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
-                && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
-            {
-                let label = session_mgr.get_session(&sid)
-                    .map(|s| s.name.clone())
-                    .unwrap_or_else(|| sid.clone());
-                let _ = app_clone.emit("agent-needs-input", label);
+    pty_mgr
+        .attach(session_id, tmux_name, move |chunk| {
+            session_mgr.update_output_preview(&sid, &chunk);
+            if let Some(new_status) = crate::status::detect_status(&chunk) {
+                let prev = session_mgr.get_session(&sid).map(|s| s.status.clone());
+                session_mgr.update_status(&sid, new_status.clone());
+                if matches!(new_status, crate::session::AgentStatus::WaitingForInput)
+                    && !matches!(prev, Some(crate::session::AgentStatus::WaitingForInput))
+                {
+                    let label = session_mgr
+                        .get_session(&sid)
+                        .map(|s| s.name.clone())
+                        .unwrap_or_else(|| sid.clone());
+                    let _ = app_clone.emit("agent-needs-input", label);
+                }
             }
-        }
-        if let Some(cost) = crate::cost::detect_cost(&chunk) {
-            if session_mgr.update_cost(&sid, cost) {
-                let _ = app_clone.emit("cost-budget-exceeded", sid.clone());
+            if let Some(cost) = crate::cost::detect_cost(&chunk) {
+                if session_mgr.update_cost(&sid, cost) {
+                    let _ = app_clone.emit("cost-budget-exceeded", sid.clone());
+                }
             }
-        }
-        let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
-    }).map_err(|e| e.to_string())
+            let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
+        })
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -124,12 +127,15 @@ pub async fn create_session(
         args.working_dir.clone()
     };
 
-    let mut session = state.session_mgr
+    let mut session = state
+        .session_mgr
         .create_session(&args.name, agent_type, effective_working_dir.as_deref())
         .map_err(|e| e.to_string())?;
 
     if args.cost_budget_usd > 0.0 {
-        state.session_mgr.set_cost_budget(&session.id, args.cost_budget_usd);
+        state
+            .session_mgr
+            .set_cost_budget(&session.id, args.cost_budget_usd);
         session.cost_budget_usd = args.cost_budget_usd;
     }
 
@@ -137,17 +143,29 @@ pub async fn create_session(
     let tmux_name = session.tmux_session.clone();
     let dto = SessionDto::from(session);
 
-    attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session_id.clone(), &tmux_name)?;
+    attach_pty(
+        &state.pty_mgr,
+        state.session_mgr.clone(),
+        app.clone(),
+        session_id.clone(),
+        &tmux_name,
+    )?;
 
     if let Some(cmd) = args.startup_command.as_deref() {
         if !cmd.is_empty() {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-            let _ = state.pty_mgr.write_input(&session_id, &format!("{}\n", cmd));
+            let _ = state
+                .pty_mgr
+                .write_input(&session_id, &format!("{}\n", cmd));
         }
     }
 
-    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect();
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
     let _ = app.emit("sessions-updated", sessions);
 
     Ok(dto)
@@ -171,21 +189,30 @@ pub async fn kill_session(
     }
 
     state.pty_mgr.detach(&session_id);
-    state.session_mgr.kill_session(&session_id).map_err(|e| e.to_string())?;
+    state
+        .session_mgr
+        .kill_session(&session_id)
+        .map_err(|e| e.to_string())?;
 
-    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect();
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
     let _ = app.emit("sessions-updated", sessions);
 
     Ok(())
 }
 
 #[tauri::command]
-pub async fn list_sessions(
-    state: State<'_, AppState>,
-) -> Result<Vec<SessionDto>, String> {
-    Ok(state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect())
+pub async fn list_sessions(state: State<'_, AppState>) -> Result<Vec<SessionDto>, String> {
+    Ok(state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect())
 }
 
 #[tauri::command]
@@ -194,7 +221,10 @@ pub async fn send_input(
     session_id: String,
     input: String,
 ) -> Result<(), String> {
-    state.pty_mgr.write_input(&session_id, &input).map_err(|e| e.to_string())
+    state
+        .pty_mgr
+        .write_input(&session_id, &input)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -202,10 +232,19 @@ pub async fn restore_sessions(
     app: AppHandle,
     state: State<'_, AppState>,
 ) -> Result<Vec<SessionDto>, String> {
-    let sessions = state.session_mgr.restore_from_tmux().map_err(|e| e.to_string())?;
+    let sessions = state
+        .session_mgr
+        .restore_from_tmux()
+        .map_err(|e| e.to_string())?;
 
     for session in &sessions {
-        let _ = attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session.id.clone(), &session.tmux_session);
+        let _ = attach_pty(
+            &state.pty_mgr,
+            state.session_mgr.clone(),
+            app.clone(),
+            session.id.clone(),
+            &session.tmux_session,
+        );
     }
 
     Ok(sessions.into_iter().map(SessionDto::from).collect())
@@ -225,8 +264,12 @@ pub async fn rename_session(
     if !state.session_mgr.rename_session(&session_id, &new_name) {
         return Err("Session not found".to_string());
     }
-    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect();
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
     let _ = app.emit("sessions-updated", sessions);
     Ok(())
 }
@@ -242,8 +285,12 @@ pub async fn set_session_note(
     if !state.session_mgr.set_session_note(&session_id, &note) {
         return Err("Session not found".to_string());
     }
-    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect();
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
     let _ = app.emit("sessions-updated", sessions);
     Ok(())
 }
@@ -255,11 +302,13 @@ pub async fn fork_session(
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<SessionDto, String> {
-    let (name, agent_type, working_dir) = state.session_mgr
+    let (name, agent_type, working_dir) = state
+        .session_mgr
         .get_fork_args(&session_id)
         .ok_or_else(|| "Session not found".to_string())?;
 
-    let session = state.session_mgr
+    let session = state
+        .session_mgr
         .create_session(&name, agent_type, working_dir.as_deref())
         .map_err(|e| e.to_string())?;
 
@@ -267,10 +316,20 @@ pub async fn fork_session(
     let tmux_name = session.tmux_session.clone();
     let dto = SessionDto::from(session);
 
-    attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session_id_new, &tmux_name)?;
+    attach_pty(
+        &state.pty_mgr,
+        state.session_mgr.clone(),
+        app.clone(),
+        session_id_new,
+        &tmux_name,
+    )?;
 
-    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect();
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
     let _ = app.emit("sessions-updated", sessions);
 
     Ok(dto)
@@ -291,12 +350,20 @@ pub async fn save_template(
     count: u32,
     startup_command: Option<String>,
 ) -> Result<Vec<crate::templates::SessionTemplate>, String> {
-    let t = crate::templates::SessionTemplate::new(&name, &agent_type, working_dir, count, startup_command);
+    let t = crate::templates::SessionTemplate::new(
+        &name,
+        &agent_type,
+        working_dir,
+        count,
+        startup_command,
+    );
     crate::templates::add_template(t).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn delete_template(template_id: String) -> Result<Vec<crate::templates::SessionTemplate>, String> {
+pub async fn delete_template(
+    template_id: String,
+) -> Result<Vec<crate::templates::SessionTemplate>, String> {
     crate::templates::delete_template(&template_id).map_err(|e| e.to_string())
 }
 
@@ -317,12 +384,17 @@ pub async fn add_auto_response(
 }
 
 #[tauri::command]
-pub async fn delete_auto_response(id: String) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
+pub async fn delete_auto_response(
+    id: String,
+) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
     crate::auto_respond::delete_auto_response(&id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub async fn toggle_auto_response(id: String, enabled: bool) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
+pub async fn toggle_auto_response(
+    id: String,
+    enabled: bool,
+) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
     crate::auto_respond::toggle_auto_response(&id, enabled).map_err(|e| e.to_string())
 }
 
@@ -333,10 +405,14 @@ pub async fn export_session_output(
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<String, String> {
-    let session = state.session_mgr.get_session(&session_id)
+    let session = state
+        .session_mgr
+        .get_session(&session_id)
         .ok_or_else(|| "Session not found".to_string())?;
 
-    let output = state.pty_mgr.get_output(&session_id)
+    let output = state
+        .pty_mgr
+        .get_output(&session_id)
         .unwrap_or_else(|| format!("# No output captured for session '{}'.\n", session.name));
 
     let safe_name = session.name.replace(['/', '\\', ':', ' '], "-");
@@ -345,7 +421,11 @@ pub async fn export_session_output(
 
     let home = std::env::var("HOME").unwrap_or_else(|_| ".".to_string());
     let downloads = std::path::PathBuf::from(&home).join("Downloads");
-    let dir = if downloads.exists() { downloads } else { std::path::PathBuf::from(&home) };
+    let dir = if downloads.exists() {
+        downloads
+    } else {
+        std::path::PathBuf::from(&home)
+    };
     let path = dir.join(&filename);
 
     std::fs::write(&path, &output).map_err(|e| e.to_string())?;
@@ -368,9 +448,15 @@ pub async fn mark_session_done(
     state: State<'_, AppState>,
     session_id: String,
 ) -> Result<(), String> {
-    state.session_mgr.update_status(&session_id, crate::session::AgentStatus::Done);
-    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
-        .into_iter().map(SessionDto::from).collect();
+    state
+        .session_mgr
+        .update_status(&session_id, crate::session::AgentStatus::Done);
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
     let _ = app.emit("sessions-updated", sessions);
     Ok(())
 }

@@ -43,10 +43,23 @@ export function useTauriEvents() {
       }
     });
 
+    const unlistenStuck = listen<string>("session-stuck", (event) => {
+      const sessions = useSessionStore.getState().sessions;
+      const session = sessions.find((s) => s.id === event.payload);
+      const name = session?.name ?? event.payload;
+      if (Notification.permission === "granted") {
+        new Notification("Session auto-interrupted", {
+          body: `${name} appeared stuck (no output for 15 min) — sent Ctrl+C`,
+          silent: false,
+        });
+      }
+    });
+
     return () => {
       unlisten.then((fn) => fn());
       unlistenNeeds.then((fn) => fn());
       unlistenBudget.then((fn) => fn());
+      unlistenStuck.then((fn) => fn());
     };
   }, [setSessions]);
 }
