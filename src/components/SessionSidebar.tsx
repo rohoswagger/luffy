@@ -24,6 +24,7 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
   const [now, setNow] = useState(new Date());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [filter, setFilter] = useState("");
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -45,7 +46,10 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
   };
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
-  const sortedSessions = sortSessionsByPriority(sessions);
+  const filteredSessions = filter
+    ? sessions.filter((s) => s.name.toLowerCase().includes(filter.toLowerCase()) || (s.branch && s.branch.toLowerCase().includes(filter.toLowerCase())))
+    : sessions;
+  const sortedSessions = sortSessionsByPriority(filteredSessions);
 
   return (
     <aside style={{
@@ -87,6 +91,17 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
           +
         </button>
       </div>
+
+      {sessions.length > 0 && (
+        <div style={{ padding: "4px 8px", borderBottom: "1px solid var(--border)" }}>
+          <input
+            placeholder="Filter sessions..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            style={{ width: "100%", background: "var(--bg-tertiary)", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-primary)", padding: "4px 8px", fontSize: 11 }}
+          />
+        </div>
+      )}
 
       <div style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
         {sessions.length === 0 && (
