@@ -85,6 +85,20 @@ async fn send_startup_command(
     }
 }
 
+/// Persist a startup command on a session if present and non-empty.
+fn persist_startup_command(
+    session_mgr: &crate::session::SessionManager,
+    session: &mut Session,
+    startup_command: Option<&str>,
+) {
+    if let Some(cmd) = startup_command {
+        if !cmd.is_empty() {
+            session_mgr.set_startup_command(&session.id, Some(cmd.to_string()));
+            session.startup_command = Some(cmd.to_string());
+        }
+    }
+}
+
 fn parse_agent_type(s: &str) -> AgentType {
     match s {
         "claude-code" => AgentType::ClaudeCode,
@@ -158,15 +172,11 @@ pub async fn create_session(
         session.cost_budget_usd = args.cost_budget_usd;
     }
 
-    // Persist startup command so forks and restarts can replay it.
-    if let Some(ref cmd) = args.startup_command {
-        if !cmd.is_empty() {
-            state
-                .session_mgr
-                .set_startup_command(&session.id, Some(cmd.clone()));
-            session.startup_command = Some(cmd.clone());
-        }
-    }
+    persist_startup_command(
+        &state.session_mgr,
+        &mut session,
+        args.startup_command.as_deref(),
+    );
 
     let session_id = session.id.clone();
     let tmux_name = session.tmux_session.clone();
@@ -309,14 +319,7 @@ pub async fn fork_session(
         .create_session(&name, agent_type, working_dir.as_deref())
         .map_err(|e| e.to_string())?;
 
-    if let Some(ref cmd) = startup_command {
-        if !cmd.is_empty() {
-            state
-                .session_mgr
-                .set_startup_command(&session.id, Some(cmd.clone()));
-            session.startup_command = Some(cmd.clone());
-        }
-    }
+    persist_startup_command(&state.session_mgr, &mut session, startup_command.as_deref());
 
     let session_id_new = session.id.clone();
     let tmux_name = session.tmux_session.clone();
@@ -488,14 +491,11 @@ pub async fn restart_session(
         session.cost_budget_usd = args.cost_budget_usd;
     }
 
-    if let Some(ref cmd) = args.startup_command {
-        if !cmd.is_empty() {
-            state
-                .session_mgr
-                .set_startup_command(&session.id, Some(cmd.clone()));
-            session.startup_command = Some(cmd.clone());
-        }
-    }
+    persist_startup_command(
+        &state.session_mgr,
+        &mut session,
+        args.startup_command.as_deref(),
+    );
 
     let session_id_new = session.id.clone();
     let tmux_name = session.tmux_session.clone();
