@@ -42,6 +42,9 @@ pub fn run() {
                     std::collections::HashMap::new();
                 // Detect THINKING sessions stuck with no output change for 15 minutes
                 let mut stuck_detector = stuck_detector::StuckDetector::new(15 * 60);
+                // Track whether there were active (THINKING/WAITING) sessions last tick
+                // for batch-done notification
+                let mut had_active_sessions = false;
                 loop {
                     tokio::time::sleep(std::time::Duration::from_secs(10)).await;
                     tick += 1;
@@ -150,6 +153,40 @@ pub fn run() {
                             stuck_detector.reset(&s.id);
                             changed = true;
                         }
+                    }
+
+                    // Batch-done notification: fire when all active sessions finish.
+                    // Only triggers if there were THINKING/WAITING sessions last tick.
+                    {
+                        let all_sessions = session_mgr.list_sessions();
+                        let active_count = all_sessions
+                            .iter()
+                            .filter(|s| {
+                                matches!(
+                                    s.status,
+                                    session::AgentStatus::Thinking
+                                        | session::AgentStatus::WaitingForInput
+                                )
+                            })
+                            .count();
+                        if had_active_sessions && active_count == 0 && !all_sessions.is_empty() {
+                            let done = all_sessions
+                                .iter()
+                                .filter(|s| matches!(s.status, session::AgentStatus::Done))
+                                .count();
+                            let errors = all_sessions
+                                .iter()
+                                .filter(|s| matches!(s.status, session::AgentStatus::Error))
+                                .count();
+                            let idle = all_sessions
+                                .iter()
+                                .filter(|s| matches!(s.status, session::AgentStatus::Idle))
+                                .count();
+                            let summary =
+                                format!("{} done, {} failed, {} idle", done, errors, idle);
+                            let _ = tauri::Emitter::emit(&app_handle, "batch-done", summary);
+                        }
+                        had_active_sessions = active_count > 0;
                     }
 
                     if changed {

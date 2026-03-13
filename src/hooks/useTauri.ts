@@ -55,11 +55,21 @@ export function useTauriEvents() {
       }
     });
 
+    const unlistenBatch = listen<string>("batch-done", (event) => {
+      if (Notification.permission === "granted") {
+        new Notification("All agents finished", {
+          body: event.payload,
+          silent: false,
+        });
+      }
+    });
+
     return () => {
       unlisten.then((fn) => fn());
       unlistenNeeds.then((fn) => fn());
       unlistenBudget.then((fn) => fn());
       unlistenStuck.then((fn) => fn());
+      unlistenBatch.then((fn) => fn());
     };
   }, [setSessions]);
 }
