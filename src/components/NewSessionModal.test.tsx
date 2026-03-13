@@ -39,6 +39,22 @@ describe("NewSessionModal", () => {
     expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ name: "worker" }));
   });
 
+  it("includes startup_command in onCreate args", () => {
+    const onCreate = vi.fn();
+    render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);
+    // Default agent is claude-code, which should default to "claude"
+    fireEvent.click(screen.getByText(/create/i));
+    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ startup_command: "claude" }));
+  });
+
+  it("updates startup_command when agent type changes", () => {
+    const onCreate = vi.fn();
+    render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "aider" } });
+    fireEvent.click(screen.getByText(/create/i));
+    expect(onCreate).toHaveBeenCalledWith(expect.objectContaining({ startup_command: "aider" }));
+  });
+
   it("calls onCreate N times with indexed names when count > 1", () => {
     const onCreate = vi.fn();
     render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);

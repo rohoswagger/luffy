@@ -1,10 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+
+const DEFAULT_COMMANDS: Record<string, string> = {
+  "claude-code": "claude",
+  "aider": "aider",
+  "generic": "",
+};
 
 interface CreateArgs {
   name: string;
   agent_type: string;
   working_dir: string | null;
+  startup_command: string;
 }
 
 interface Props {
@@ -18,6 +25,11 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   const [agentType, setAgentType] = useState("claude-code");
   const [workingDir, setWorkingDir] = useState("");
   const [count, setCount] = useState(1);
+  const [startupCommand, setStartupCommand] = useState(DEFAULT_COMMANDS["claude-code"]);
+
+  useEffect(() => {
+    setStartupCommand(DEFAULT_COMMANDS[agentType] ?? "");
+  }, [agentType]);
 
   if (!open) return null;
 
@@ -27,10 +39,10 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
     const dir = workingDir.trim() || null;
     if (count > 1) {
       for (let i = 1; i <= count; i++) {
-        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir });
+        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir, startup_command: startupCommand });
       }
     } else {
-      onCreate({ name: baseName, agent_type: agentType, working_dir: dir });
+      onCreate({ name: baseName, agent_type: agentType, working_dir: dir, startup_command: startupCommand });
     }
     setName("");
     setWorkingDir("");
@@ -77,6 +89,10 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
           <div>
             <label style={labelStyle}>Working Directory (optional)</label>
             <input style={inputStyle} placeholder="/path/to/project" value={workingDir} onChange={(e) => setWorkingDir(e.target.value)} />
+          </div>
+          <div>
+            <label style={labelStyle}>Startup Command (optional)</label>
+            <input style={inputStyle} placeholder="e.g. claude, aider" value={startupCommand} onChange={(e) => setStartupCommand(e.target.value)} />
           </div>
           <div>
             <label style={labelStyle}>Count (spawn N parallel sessions)</label>

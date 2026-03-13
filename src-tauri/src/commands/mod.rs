@@ -9,6 +9,7 @@ pub struct CreateSessionArgs {
     pub name: String,
     pub agent_type: String,
     pub working_dir: Option<String>,
+    pub startup_command: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -101,6 +102,13 @@ pub async fn create_session(
     let dto = SessionDto::from(session);
 
     attach_pty(&state.pty_mgr, state.session_mgr.clone(), app.clone(), session_id.clone(), &tmux_name)?;
+
+    if let Some(cmd) = args.startup_command.as_deref() {
+        if !cmd.is_empty() {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            let _ = state.pty_mgr.write_input(&session_id, &format!("{}\n", cmd));
+        }
+    }
 
     let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
         .into_iter().map(SessionDto::from).collect();
