@@ -43,7 +43,7 @@ export default function App() {
     }
   }, [sessions, activeSessionId, setActiveSession]);
 
-  const handleCreate = useCallback(async (args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string; create_worktree?: boolean }) => {
+  const handleCreate = useCallback(async (args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string; create_worktree?: boolean; cost_budget_usd?: number }) => {
     setShowNewModal(false);
     try {
       const session = await createSession(args);

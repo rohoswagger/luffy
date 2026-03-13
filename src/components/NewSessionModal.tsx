@@ -13,6 +13,7 @@ interface CreateArgs {
   working_dir: string | null;
   startup_command: string;
   create_worktree: boolean;
+  cost_budget_usd: number;
 }
 
 interface Props {
@@ -28,6 +29,7 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
   const [count, setCount] = useState(1);
   const [startupCommand, setStartupCommand] = useState(DEFAULT_COMMANDS["claude-code"]);
   const [createWorktree, setCreateWorktree] = useState(false);
+  const [costBudget, setCostBudget] = useState(0);
 
   useEffect(() => {
     setStartupCommand(DEFAULT_COMMANDS[agentType] ?? "");
@@ -41,14 +43,15 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
     const dir = workingDir.trim() || null;
     if (count > 1) {
       for (let i = 1; i <= count; i++) {
-        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree });
+        onCreate({ name: `${baseName}-${i}`, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree, cost_budget_usd: costBudget });
       }
     } else {
-      onCreate({ name: baseName, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree });
+      onCreate({ name: baseName, agent_type: agentType, working_dir: dir, startup_command: startupCommand, create_worktree: createWorktree, cost_budget_usd: costBudget });
     }
     setName("");
     setWorkingDir("");
     setCount(1);
+    setCostBudget(0);
   };
 
   const overlayStyle: React.CSSProperties = {
@@ -119,6 +122,18 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
               style={{ ...inputStyle, width: 80 }}
               value={count}
               onChange={(e) => setCount(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>Cost Budget USD (0 = no limit)</label>
+            <input
+              type="number"
+              min={0}
+              step={0.01}
+              style={{ ...inputStyle, width: 100 }}
+              value={costBudget || ""}
+              placeholder="0.00"
+              onChange={(e) => setCostBudget(Math.max(0, parseFloat(e.target.value) || 0))}
             />
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>

@@ -46,6 +46,7 @@ pub struct Session {
     pub branch: Option<String>,
     pub agent_type: AgentType,
     pub total_cost_usd: f64,
+    pub cost_budget_usd: f64,  // 0.0 = no limit
     pub note: Option<String>,
     pub last_output_preview: String,
     pub events: Vec<SessionEvent>,
@@ -66,6 +67,7 @@ impl Session {
             branch: None,
             agent_type,
             total_cost_usd: 0.0,
+            cost_budget_usd: 0.0,
             note: None,
             last_output_preview: String::new(),
             events: vec![SessionEvent::created()],

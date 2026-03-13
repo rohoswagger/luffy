@@ -11,6 +11,7 @@ export interface SessionData {
   created_at: string;
   last_activity: string;
   total_cost_usd: number;
+  cost_budget_usd: number;
   note: string | null;
   last_output_preview: string;
 }

@@ -102,15 +102,26 @@ impl SessionManager {
         self.sessions.lock().unwrap().get(session_id).cloned()
     }
 
+    /// Set the cost budget for a session (0.0 = no limit).
+    pub fn set_cost_budget(&self, session_id: &str, budget: f64) {
+        let mut sessions = self.sessions.lock().unwrap();
+        if let Some(s) = sessions.get_mut(session_id) {
+            s.cost_budget_usd = budget;
+        }
+    }
+
     /// Update the running cost of a session (stores the maximum seen so far).
-    pub fn update_cost(&self, session_id: &str, cost: f64) {
+    /// Returns true if the session has a budget set and the new cost exceeds it.
+    pub fn update_cost(&self, session_id: &str, cost: f64) -> bool {
         let mut sessions = self.sessions.lock().unwrap();
         if let Some(s) = sessions.get_mut(session_id) {
             if cost > s.total_cost_usd {
                 s.total_cost_usd = cost;
                 s.events.push(SessionEvent::cost_updated(cost));
+                return s.cost_budget_usd > 0.0 && cost > s.cost_budget_usd;
             }
         }
+        false
     }
 
     /// Update the status of a session.
@@ -190,6 +201,7 @@ impl SessionManager {
                     branch,
                     agent_type,
                     total_cost_usd: 0.0,
+                    cost_budget_usd: 0.0,
                     note,
                     last_output_preview: String::new(),
                     events: vec![SessionEvent::created()],
@@ -490,6 +502,41 @@ mod tests {
         assert_eq!(dead[0], dead_id);
         assert_eq!(mgr.get_session(&alive_id).unwrap().status, AgentStatus::WaitingForInput);
         assert_eq!(mgr.get_session(&dead_id).unwrap().status, AgentStatus::Error);
+    }
+
+    #[test]
+    fn update_cost_returns_budget_exceeded_when_cost_crosses_limit() {
+        let mgr = SessionManager::new();
+        let mut s = Session::new("expensive", AgentType::Generic);
+        s.cost_budget_usd = 5.0;
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let exceeded = mgr.update_cost(&id, 6.0);
+        assert!(exceeded, "Expected budget exceeded");
+    }
+
+    #[test]
+    fn update_cost_returns_false_when_within_budget() {
+        let mgr = SessionManager::new();
+        let mut s = Session::new("cheap", AgentType::Generic);
+        s.cost_budget_usd = 10.0;
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let exceeded = mgr.update_cost(&id, 2.0);
+        assert!(!exceeded);
+    }
+
+    #[test]
+    fn update_cost_returns_false_when_no_budget_set() {
+        let mgr = SessionManager::new();
+        let s = Session::new("default-budget", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let exceeded = mgr.update_cost(&id, 100.0);
+        assert!(!exceeded, "No budget = never exceeded");
     }
 
     #[test]

@@ -59,7 +59,9 @@ describe("NewSessionModal", () => {
     const onCreate = vi.fn();
     render(<NewSessionModal open onClose={vi.fn()} onCreate={onCreate} />);
     fireEvent.change(screen.getByPlaceholderText(/session name/i), { target: { value: "worker" } });
-    fireEvent.change(screen.getByRole("spinbutton"), { target: { value: "3" } });
+    fireEvent.change(screen.getByPlaceholderText(/0\.00/), { target: { value: "" } }); // ensure cost budget is clear
+    const countInputs = screen.getAllByRole("spinbutton");
+    fireEvent.change(countInputs[0], { target: { value: "3" } });
     fireEvent.click(screen.getByText(/create/i));
     expect(onCreate).toHaveBeenCalledTimes(3);
     expect(onCreate).toHaveBeenNthCalledWith(1, expect.objectContaining({ name: "worker-1" }));

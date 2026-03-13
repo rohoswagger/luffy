@@ -31,14 +31,27 @@ export function useTauriEvents() {
       }
     });
 
+    const unlistenBudget = listen<string>("cost-budget-exceeded", (event) => {
+      const sessions = useSessionStore.getState().sessions;
+      const session = sessions.find((s) => s.id === event.payload);
+      const name = session?.name ?? event.payload;
+      if (Notification.permission === "granted") {
+        new Notification("Cost budget exceeded", {
+          body: `${name} has exceeded its cost budget`,
+          silent: false,
+        });
+      }
+    });
+
     return () => {
       unlisten.then((fn) => fn());
       unlistenNeeds.then((fn) => fn());
+      unlistenBudget.then((fn) => fn());
     };
   }, [setSessions]);
 }
 
-export async function createSession(args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string; create_worktree?: boolean }) {
+export async function createSession(args: { name: string; agent_type: string; working_dir: string | null; startup_command?: string; create_worktree?: boolean; cost_budget_usd?: number }) {
   return invoke<SessionData>("create_session", { args });
 }
 

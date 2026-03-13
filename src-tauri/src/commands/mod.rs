@@ -12,6 +12,8 @@ pub struct CreateSessionArgs {
     pub startup_command: Option<String>,
     #[serde(default)]
     pub create_worktree: bool,
+    #[serde(default)]
+    pub cost_budget_usd: f64,
 }
 
 #[derive(Serialize, Clone)]
@@ -26,6 +28,7 @@ pub struct SessionDto {
     pub created_at: String,
     pub last_activity: String,
     pub total_cost_usd: f64,
+    pub cost_budget_usd: f64,
     pub note: Option<String>,
     pub last_output_preview: String,
 }
@@ -47,6 +50,7 @@ impl From<Session> for SessionDto {
             created_at: s.created_at.to_rfc3339(),
             last_activity: s.last_activity.to_rfc3339(),
             total_cost_usd: s.total_cost_usd,
+            cost_budget_usd: s.cost_budget_usd,
             note: s.note,
             last_output_preview: s.last_output_preview,
         }
@@ -87,7 +91,9 @@ fn attach_pty(
             }
         }
         if let Some(cost) = crate::cost::detect_cost(&chunk) {
-            session_mgr.update_cost(&sid, cost);
+            if session_mgr.update_cost(&sid, cost) {
+                let _ = app_clone.emit("cost-budget-exceeded", sid.clone());
+            }
         }
         let _ = app_clone.emit(&format!("pty-output-{}", sid), chunk);
     }).map_err(|e| e.to_string())
@@ -118,9 +124,14 @@ pub async fn create_session(
         args.working_dir.clone()
     };
 
-    let session = state.session_mgr
+    let mut session = state.session_mgr
         .create_session(&args.name, agent_type, effective_working_dir.as_deref())
         .map_err(|e| e.to_string())?;
+
+    if args.cost_budget_usd > 0.0 {
+        state.session_mgr.set_cost_budget(&session.id, args.cost_budget_usd);
+        session.cost_budget_usd = args.cost_budget_usd;
+    }
 
     let session_id = session.id.clone();
     let tmux_name = session.tmux_session.clone();
