@@ -156,6 +156,26 @@ pub async fn restore_sessions(
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
 
+/// Rename a session's display name.
+#[tauri::command]
+pub async fn rename_session(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    session_id: String,
+    new_name: String,
+) -> Result<(), String> {
+    if new_name.trim().is_empty() {
+        return Err("Name cannot be empty".to_string());
+    }
+    if !state.session_mgr.rename_session(&session_id, &new_name) {
+        return Err("Session not found".to_string());
+    }
+    let sessions: Vec<SessionDto> = state.session_mgr.list_sessions()
+        .into_iter().map(SessionDto::from).collect();
+    let _ = app.emit("sessions-updated", sessions);
+    Ok(())
+}
+
 /// Fork an existing session: create a new session with the same agent type and working dir.
 #[tauri::command]
 pub async fn fork_session(

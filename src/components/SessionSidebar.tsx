@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
 import { formatRelativeTime } from "../utils/time";
@@ -20,10 +21,27 @@ const AGENT_ICONS: Record<string, string> = {
 
 export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork }: Props) {
   const [now, setNow] = useState(new Date());
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
     return () => clearInterval(t);
   }, []);
+
+  const startRename = (session: SessionData, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setRenamingId(session.id);
+    setRenameValue(session.name);
+  };
+
+  const commitRename = (id: string) => {
+    const trimmed = renameValue.trim();
+    if (trimmed) {
+      invoke("rename_session", { sessionId: id, newName: trimmed }).catch(console.error);
+    }
+    setRenamingId(null);
+  };
 
   const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
 
@@ -92,9 +110,28 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
             <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "space-between" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, overflow: "hidden" }}>
                 <span style={{ fontSize: 12 }}>{AGENT_ICONS[session.agent_type] || "▸"}</span>
-                <span style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {session.name}
-                </span>
+                {renamingId === session.id ? (
+                  <input
+                    autoFocus
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onBlur={() => commitRename(session.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") commitRename(session.id);
+                      if (e.key === "Escape") setRenamingId(null);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ fontSize: 12, background: "var(--bg-tertiary)", border: "1px solid var(--accent-blue)", borderRadius: 3, color: "var(--text-primary)", padding: "1px 4px", width: 140 }}
+                  />
+                ) : (
+                  <span
+                    onDoubleClick={(e) => startRename(session, e)}
+                    title="Double-click to rename"
+                    style={{ fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                  >
+                    {session.name}
+                  </span>
+                )}
               </div>
               {onFork && (
                 <button

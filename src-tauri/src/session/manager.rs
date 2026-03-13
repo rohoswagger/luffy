@@ -156,6 +156,17 @@ impl SessionManager {
         Ok(restored)
     }
 
+    /// Rename a session (display name only, tmux session name unchanged).
+    pub fn rename_session(&self, session_id: &str, new_name: &str) -> bool {
+        let mut sessions = self.sessions.lock().unwrap();
+        if let Some(s) = sessions.get_mut(session_id) {
+            s.name = new_name.trim().to_string();
+            true
+        } else {
+            false
+        }
+    }
+
     /// Remove a session from the registry without killing the tmux session.
     /// Used for cleanup of already-dead or already-finished sessions.
     pub fn remove_session(&self, session_id: &str) -> bool {
@@ -241,6 +252,34 @@ mod tests {
             mgr.sessions.lock().unwrap().insert(id, s);
         }
         assert_eq!(mgr.list_sessions().len(), 3);
+    }
+
+    #[test]
+    fn rename_session_changes_display_name() {
+        let mgr = SessionManager::new();
+        let s = Session::new("old-name", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        assert!(mgr.rename_session(&id, "new-name"));
+        assert_eq!(mgr.get_session(&id).unwrap().name, "new-name");
+    }
+
+    #[test]
+    fn rename_session_trims_whitespace() {
+        let mgr = SessionManager::new();
+        let s = Session::new("foo", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        mgr.rename_session(&id, "  bar  ");
+        assert_eq!(mgr.get_session(&id).unwrap().name, "bar");
+    }
+
+    #[test]
+    fn rename_session_returns_false_for_missing_session() {
+        let mgr = SessionManager::new();
+        assert!(!mgr.rename_session("nope", "new-name"));
     }
 
     #[test]
