@@ -128,10 +128,12 @@ pub fn run() {
                         }
                     }
 
+                    // Snapshot all sessions once per tick (avoids 4 separate lock acquisitions)
+                    let all_sessions = session_mgr.list_sessions();
+
                     // Kill sessions that have exceeded their cost budget
-                    let over_budget: Vec<_> = session_mgr
-                        .list_sessions()
-                        .into_iter()
+                    let over_budget: Vec<_> = all_sessions
+                        .iter()
                         .filter(|s| s.cost_budget_usd > 0.0 && s.total_cost_usd > s.cost_budget_usd)
                         .collect();
                     for s in over_budget {
@@ -153,9 +155,8 @@ pub fn run() {
                     // Debounce: only respond once per unique (session, preview) pair
                     let patterns = auto_respond::load_auto_responses();
                     if !patterns.is_empty() {
-                        let waiting: Vec<_> = session_mgr
-                            .list_sessions()
-                            .into_iter()
+                        let waiting: Vec<_> = all_sessions
+                            .iter()
                             .filter(|s| matches!(s.status, session::AgentStatus::WaitingForInput))
                             .collect();
                         // Remove entries for sessions no longer WAITING
@@ -195,9 +196,8 @@ pub fn run() {
 
                     // Stuck THINKING detection: if a THINKING session has had no
                     // output change for 15 minutes, send Ctrl+C to interrupt it.
-                    let thinking_sessions: Vec<_> = session_mgr
-                        .list_sessions()
-                        .into_iter()
+                    let thinking_sessions: Vec<_> = all_sessions
+                        .iter()
                         .filter(|s| matches!(s.status, session::AgentStatus::Thinking))
                         .collect();
                     let thinking_ids: Vec<String> =
@@ -224,7 +224,6 @@ pub fn run() {
                     // Batch-done notification: fire when all active sessions finish.
                     // Only triggers if there were THINKING/WAITING sessions last tick.
                     {
-                        let all_sessions = session_mgr.list_sessions();
                         let active_count = all_sessions
                             .iter()
                             .filter(|s| {
