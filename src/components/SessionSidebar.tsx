@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useClock } from "../hooks/useClock";
 import { invoke } from "@tauri-apps/api/core";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
@@ -44,17 +45,12 @@ export function SessionSidebar({
   onRestart,
   onClearDone,
 }: Props) {
-  const [now, setNow] = useState(new Date());
+  const now = useClock();
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteValue, setNoteValue] = useState("");
   const [filter, setFilter] = useState("");
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
-  }, []);
 
   const startRename = (session: SessionData, e: React.MouseEvent) => {
     e.stopPropagation();

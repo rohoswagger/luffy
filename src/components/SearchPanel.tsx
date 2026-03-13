@@ -27,7 +27,7 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
       setQuery("");
       setResults([]);
       setSearched(false);
-      setTimeout(() => inputRef.current?.focus(), 10);
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
     return () => {
       mountedRef.current = false;

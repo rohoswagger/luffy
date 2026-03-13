@@ -58,6 +58,7 @@ import {
 } from "./hooks/useTauri";
 import { nextWaitingSessionId } from "./utils/sessions";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useClock } from "./hooks/useClock";
 import { StatusBadge } from "./components/StatusBadge";
 import { formatDuration } from "./utils/time";
 import logoSrc from "./assets/logo.png";
@@ -77,7 +78,7 @@ export default function App() {
   const [showSidebar, setShowSidebar] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
   const [toast, setToast] = useState<string | null>(null);
-  const [now, setNow] = useState(new Date());
+  const now = useClock();
   const sidebarRef = useRef<HTMLDivElement>(null);
   const tabStripRef = useRef<HTMLDivElement>(null);
 
@@ -90,12 +91,6 @@ export default function App() {
     ERROR: errorCount,
     DONE: doneCount,
   } = counts;
-
-  // Clock for status bar durations
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
-  }, []);
 
   // Auto-select: pick first session if none selected, or if active session was removed
   useEffect(() => {
