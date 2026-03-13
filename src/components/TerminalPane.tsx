@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { listen } from "@tauri-apps/api/event";
@@ -12,7 +12,7 @@ interface Props {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function TerminalPane({
+export const TerminalPane = React.memo(function TerminalPane({
   sessionId,
   tmuxSession: _tmuxSession,
   active,
@@ -154,4 +154,4 @@ export function TerminalPane({
       }}
     />
   );
-}
+});

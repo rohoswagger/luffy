@@ -66,7 +66,8 @@ export function CommandPalette({ open, sessions, onSelect, onClose }: Props) {
       return;
     }
     if (e.key === "Enter" && filtered.length > 0) {
-      onSelect(filtered[selectedIdx]?.id ?? filtered[0].id);
+      const idx = Math.min(selectedIdx, filtered.length - 1);
+      onSelect(filtered[idx].id);
       onClose();
     }
   };
