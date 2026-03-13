@@ -21,6 +21,8 @@ A macOS desktop app for managing multiple tmux-based AI coding agent sessions in
 - **Session event log** — Timeline of status changes and cost updates per session (Cmd+L)
 - **Quick commands** — Preset y/n/continue buttons when agent is WAITING
 - **Cost tracking** — Per-session and total USD cost detection from agent output
+- **Cost budget** — Set a per-session USD budget; auto-kills session when exceeded with desktop notification; color-coded progress (green → amber at 80% → red)
+- **Mark as done** — Manually mark any session as DONE with the ✓ button
 - **Session export** — Export session output to ~/Downloads as a log file
 - **Git context** — Auto-detect branch and worktree path from working directory
 - **Git worktree auto-creation** — Optionally create a dedicated git worktree + branch per session so agents don't conflict
@@ -35,7 +37,7 @@ A macOS desktop app for managing multiple tmux-based AI coding agent sessions in
 
 - **Frontend**: React 19 + TypeScript + Zustand + xterm.js v5
 - **Backend**: Tauri 2 + Rust + portable-pty
-- **Testing**: Vitest + @testing-library/react + cargo test (109 frontend + 80 Rust = 189 tests)
+- **Testing**: Vitest + @testing-library/react + cargo test (109 frontend + 86 Rust = 195 tests)
 - **Package manager**: bun
 
 ## Development
