@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
@@ -85,16 +85,22 @@ export function SessionSidebar({
     setRenamingId(null);
   };
 
-  const totalCost = sessions.reduce((sum, s) => sum + s.total_cost_usd, 0);
-  const filteredSessions = filter
-    ? sessions.filter(
-        (s) =>
-          s.name.toLowerCase().includes(filter.toLowerCase()) ||
-          (s.branch && s.branch.toLowerCase().includes(filter.toLowerCase())) ||
-          (s.note && s.note.toLowerCase().includes(filter.toLowerCase())),
-      )
-    : sessions;
-  const sortedSessions = sortSessionsByPriority(filteredSessions);
+  const totalCost = useMemo(
+    () => sessions.reduce((sum, s) => sum + s.total_cost_usd, 0),
+    [sessions],
+  );
+  const sortedSessions = useMemo(() => {
+    const list = filter
+      ? sessions.filter(
+          (s) =>
+            s.name.toLowerCase().includes(filter.toLowerCase()) ||
+            (s.branch &&
+              s.branch.toLowerCase().includes(filter.toLowerCase())) ||
+            (s.note && s.note.toLowerCase().includes(filter.toLowerCase())),
+        )
+      : sessions;
+    return sortSessionsByPriority(list);
+  }, [sessions, filter]);
 
   return (
     <aside

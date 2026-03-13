@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 interface SearchResult {
@@ -34,6 +34,8 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
     };
   }, [open]);
 
+  const requestIdRef = useRef(0);
+
   const runSearch = useCallback(async (q: string) => {
     if (!q.trim()) {
       if (mountedRef.current) {
@@ -42,15 +44,16 @@ export function SearchPanel({ open, onClose, onNavigate }: Props) {
       }
       return;
     }
+    const id = ++requestIdRef.current;
     try {
       const res = await invoke<SearchResult[]>("search_output", { query: q });
-      if (mountedRef.current) {
+      if (mountedRef.current && id === requestIdRef.current) {
         setResults(res);
         setSearched(true);
       }
     } catch (err) {
       console.error("Search failed:", err);
-      if (mountedRef.current) {
+      if (mountedRef.current && id === requestIdRef.current) {
         setResults([]);
         setSearched(true);
       }

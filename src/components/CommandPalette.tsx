@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { StatusBadge } from "./StatusBadge";
 import type { SessionData } from "../store/sessions";
 import { sortSessionsByPriority } from "../utils/sessions";
@@ -27,8 +27,9 @@ export function CommandPalette({ open, sessions, onSelect, onClose }: Props) {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filtered = sortSessionsByPriority(
-    sessions.filter((s) => fuzzyMatch(query, s)),
+  const filtered = useMemo(
+    () => sortSessionsByPriority(sessions.filter((s) => fuzzyMatch(query, s))),
+    [sessions, query],
   );
 
   useEffect(() => {

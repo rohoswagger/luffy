@@ -103,9 +103,12 @@ pub fn run() {
             // WAITING sessions that match configured auto-response patterns.
             tauri::async_runtime::spawn(async move {
                 let mut tick = 0u32;
-                // Track last auto-respond per session: session_id → last preview that was responded to
-                let mut last_auto_responded: std::collections::HashMap<String, String> =
-                    std::collections::HashMap::new();
+                // Track last auto-respond per session: session_id → (preview, timestamp)
+                // Re-respond to the same preview after 30s cooldown (handles repeated prompts)
+                let mut last_auto_responded: std::collections::HashMap<
+                    String,
+                    (String, tokio::time::Instant),
+                > = std::collections::HashMap::new();
                 // Detect THINKING sessions stuck with no output change for 15 minutes
                 let mut stuck_detector = stuck_detector::StuckDetector::new(15 * 60);
                 // Track whether there were active (THINKING/WAITING) sessions last tick
@@ -137,11 +140,7 @@ pub fn run() {
                         .filter(|s| s.cost_budget_usd > 0.0 && s.total_cost_usd > s.cost_budget_usd)
                         .collect();
                     for s in over_budget {
-                        let _ = tauri::Emitter::emit(
-                            &app_handle,
-                            "cost-budget-exceeded",
-                            &s.id,
-                        );
+                        let _ = tauri::Emitter::emit(&app_handle, "cost-budget-exceeded", &s.id);
                         pty_mgr.detach(&s.id);
                         if let Some(ref wt_path) = s.worktree_path {
                             if wt_path.contains("/.worktrees/") {
@@ -172,7 +171,10 @@ pub fn run() {
                         for s in waiting {
                             let already_responded = last_auto_responded
                                 .get(&s.id)
-                                .map(|prev| prev == &s.last_output_preview)
+                                .map(|(prev, ts)| {
+                                    prev == &s.last_output_preview
+                                        && ts.elapsed() < std::time::Duration::from_secs(30)
+                                })
                                 .unwrap_or(false);
                             if already_responded {
                                 continue;
@@ -193,8 +195,10 @@ pub fn run() {
                             {
                                 let input = format!("{}\n", response);
                                 let _ = pty_mgr.write_input(&s.id, &input);
-                                last_auto_responded
-                                    .insert(s.id.clone(), s.last_output_preview.clone());
+                                last_auto_responded.insert(
+                                    s.id.clone(),
+                                    (s.last_output_preview.clone(), tokio::time::Instant::now()),
+                                );
                             }
                         }
                     }
