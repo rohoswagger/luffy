@@ -82,10 +82,14 @@ export default function App() {
   const tabStripRef = useRef<HTMLDivElement>(null);
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
-  const waitingCount = sessions.filter((s) => s.status === "WAITING").length;
-  const thinkingCount = sessions.filter((s) => s.status === "THINKING").length;
-  const errorCount = sessions.filter((s) => s.status === "ERROR").length;
-  const doneCount = sessions.filter((s) => s.status === "DONE").length;
+  const counts = { WAITING: 0, THINKING: 0, ERROR: 0, DONE: 0, IDLE: 0 };
+  for (const s of sessions) counts[s.status]++;
+  const {
+    WAITING: waitingCount,
+    THINKING: thinkingCount,
+    ERROR: errorCount,
+    DONE: doneCount,
+  } = counts;
 
   // Clock for status bar durations
   useEffect(() => {
@@ -415,13 +419,8 @@ export default function App() {
                   <span style={{ fontSize: "var(--text-sm)" }}>
                     Press{" "}
                     <kbd
-                      style={{
-                        padding: "1px 5px",
-                        border: "0.5px solid var(--color-kage)",
-                        borderRadius: "var(--r-sm)",
-                        fontSize: "var(--text-xs)",
-                        background: "var(--color-paper-warm)",
-                      }}
+                      className="kbd-hint"
+                      style={{ background: "var(--color-paper-warm)" }}
                     >
                       ⌘N
                     </kbd>{" "}
