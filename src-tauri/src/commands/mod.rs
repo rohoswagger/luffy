@@ -258,6 +258,32 @@ pub async fn delete_template(template_id: String) -> Result<Vec<crate::templates
     crate::templates::delete_template(&template_id).map_err(|e| e.to_string())
 }
 
+// ---- Auto-Response Patterns ----
+
+#[tauri::command]
+pub async fn list_auto_responses() -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
+    Ok(crate::auto_respond::load_auto_responses())
+}
+
+#[tauri::command]
+pub async fn add_auto_response(
+    pattern: String,
+    response: String,
+) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
+    let ar = crate::auto_respond::AutoResponse::new(&pattern, &response);
+    crate::auto_respond::add_auto_response(ar).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_auto_response(id: String) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
+    crate::auto_respond::delete_auto_response(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn toggle_auto_response(id: String, enabled: bool) -> Result<Vec<crate::auto_respond::AutoResponse>, String> {
+    crate::auto_respond::toggle_auto_response(&id, enabled).map_err(|e| e.to_string())
+}
+
 /// Export a session's output buffer to a log file in ~/Downloads (or ~).
 /// Returns the full path of the written file.
 #[tauri::command]

@@ -23,6 +23,8 @@ const SHORTCUTS = [
     { keys: "Cmd+Shift+4", desc: "4-pane layout" },
   ]},
   { group: "Panels", items: [
+    { keys: "Cmd+T", desc: "Session templates" },
+    { keys: "Cmd+Shift+R", desc: "Auto-respond patterns" },
     { keys: "Cmd+L", desc: "Toggle event log panel" },
     { keys: "Cmd+?", desc: "This help" },
   ]},

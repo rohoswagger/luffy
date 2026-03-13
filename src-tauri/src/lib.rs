@@ -6,6 +6,7 @@ pub mod git;
 pub mod templates;
 pub mod cost;
 pub mod session_meta;
+pub mod auto_respond;
 
 use session::SessionManager;
 use pty_stream::PtyManager;
@@ -28,9 +29,11 @@ pub fn run() {
             let app_handle = app.handle().clone();
             let state = app.state::<AppState>();
             let session_mgr = state.session_mgr.clone();
+            let pty_mgr = state.pty_mgr.clone();
 
-            // Background health monitor: every 10s, check if tmux sessions are still alive
-            // and auto-remove DONE/ERROR sessions older than 30 minutes.
+            // Background health monitor: every 10s, check if tmux sessions are still alive,
+            // auto-remove DONE/ERROR sessions older than 30 minutes, and auto-respond to
+            // WAITING sessions that match configured auto-response patterns.
             tauri::async_runtime::spawn(async move {
                 let mut tick = 0u32;
                 loop {
@@ -46,6 +49,21 @@ pub fn run() {
                         for id in stale {
                             let _ = session_mgr.remove_session(&id);
                             changed = true;
+                        }
+                    }
+
+                    // Auto-respond: check WAITING sessions against configured patterns
+                    let patterns = auto_respond::load_auto_responses();
+                    if !patterns.is_empty() {
+                        let waiting: Vec<_> = session_mgr.list_sessions()
+                            .into_iter()
+                            .filter(|s| matches!(s.status, session::AgentStatus::WaitingForInput))
+                            .collect();
+                        for s in waiting {
+                            if let Some(response) = auto_respond::check_auto_respond(&s.last_output_preview, &patterns) {
+                                let input = format!("{}\n", response);
+                                let _ = pty_mgr.write_input(&s.id, &input);
+                            }
                         }
                     }
 
@@ -76,6 +94,10 @@ pub fn run() {
             commands::fork_session,
             commands::rename_session,
             commands::set_session_note,
+            commands::list_auto_responses,
+            commands::add_auto_response,
+            commands::delete_auto_response,
+            commands::toggle_auto_response,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -12,6 +12,7 @@ import { EventLog } from "./components/EventLog";
 import { QuickCommands } from "./components/QuickCommands";
 import { KeyboardHelp } from "./components/KeyboardHelp";
 import { TemplatesPanel } from "./components/TemplatesPanel";
+import { AutoResponsePanel } from "./components/AutoResponsePanel";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput, forkSession } from "./hooks/useTauri";
 import { nextWaitingSessionId } from "./utils/sessions";
@@ -26,6 +27,7 @@ export default function App() {
   const [showEventLog, setShowEventLog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAutoRespond, setShowAutoRespond] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
@@ -80,6 +82,7 @@ export default function App() {
 
       if (meta && e.key === "n") { e.preventDefault(); setShowNewModal(true); return; }
       if (meta && e.key === "t") { e.preventDefault(); setShowTemplates(true); return; }
+      if (meta && e.shiftKey && e.key === "r") { e.preventDefault(); setShowAutoRespond(true); return; }
       if (meta && e.key === "k") { e.preventDefault(); setShowPalette(true); return; }
       if (meta && e.shiftKey && e.key === "f") { e.preventDefault(); setShowSearch(true); return; }
       if (meta && e.key === "l") { e.preventDefault(); setShowEventLog((v) => !v); return; }
@@ -196,6 +199,13 @@ export default function App() {
               ⬡ templates
             </button>
             <button
+              title="Auto-respond patterns (Cmd+Shift+R)"
+              onClick={() => setShowAutoRespond(true)}
+              style={{ background: "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
+            >
+              ⚡ auto
+            </button>
+            <button
               title="Toggle event log (Cmd+L)"
               onClick={() => setShowEventLog((v) => !v)}
               style={{ background: showEventLog ? "var(--bg-tertiary)" : "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
@@ -267,6 +277,7 @@ export default function App() {
 
       <NewSessionModal open={showNewModal} onClose={() => setShowNewModal(false)} onCreate={handleCreate} />
       <KeyboardHelp open={showHelp} onClose={() => setShowHelp(false)} />
+      <AutoResponsePanel open={showAutoRespond} onClose={() => setShowAutoRespond(false)} />
       <TemplatesPanel
         open={showTemplates}
         onClose={() => setShowTemplates(false)}
