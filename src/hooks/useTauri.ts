@@ -49,3 +49,7 @@ export async function killSession(sessionId: string) {
 export async function broadcastInput(input: string) {
   return invoke<string[]>("broadcast_input", { input });
 }
+
+export async function forkSession(sessionId: string) {
+  return invoke<SessionData>("fork_session", { sessionId });
+}

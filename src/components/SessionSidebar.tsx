@@ -9,6 +9,7 @@ interface Props {
   onSelect: (id: string) => void;
   onNewSession: () => void;
   onKill: (id: string) => void;
+  onFork?: (id: string) => void;
 }
 
 const AGENT_ICONS: Record<string, string> = {
@@ -17,7 +18,7 @@ const AGENT_ICONS: Record<string, string> = {
   "generic": "▸",
 };
 
-export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill }: Props) {
+export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork }: Props) {
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 30_000);
@@ -95,6 +96,15 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   {session.name}
                 </span>
               </div>
+              {onFork && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onFork(session.id); }}
+                  title="Fork session"
+                  style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                >
+                  ⊕
+                </button>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); onKill(session.id); }}
                 title="Kill session"

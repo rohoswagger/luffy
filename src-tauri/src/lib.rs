@@ -57,6 +57,7 @@ pub fn run() {
             commands::list_templates,
             commands::save_template,
             commands::delete_template,
+            commands::fork_session,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

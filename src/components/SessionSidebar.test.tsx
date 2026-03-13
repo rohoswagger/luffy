@@ -61,4 +61,19 @@ describe("SessionSidebar", () => {
     render(<SessionSidebar sessions={zeroCostSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
     expect(screen.queryByText(/total \$/)).toBeNull();
   });
+
+  it("calls onFork when fork button clicked", () => {
+    const onFork = vi.fn();
+    render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onFork={onFork} />);
+    const forkBtns = screen.getAllByTitle("Fork session");
+    fireEvent.click(forkBtns[0]);
+    expect(onFork).toHaveBeenCalledWith("1");
+  });
+
+  it("renders without onFork prop (optional)", () => {
+    // Should not crash when onFork is not provided
+    expect(() =>
+      render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />)
+    ).not.toThrow();
+  });
 });

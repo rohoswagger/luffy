@@ -156,6 +156,14 @@ impl SessionManager {
         Ok(restored)
     }
 
+    /// Return (name, agent_type, working_dir) for forking a session.
+    pub fn get_fork_args(&self, session_id: &str) -> Option<(String, AgentType, Option<String>)> {
+        self.sessions.lock().unwrap().get(session_id).map(|s| {
+            let fork_name = format!("{}-fork", s.name);
+            (fork_name, s.agent_type.clone(), s.worktree_path.clone())
+        })
+    }
+
     /// Check all active sessions against the provided alive check function.
     /// Sessions that are THINKING/WAITING/IDLE and not alive get marked ERROR.
     /// Returns the IDs of sessions that were marked as dead.
@@ -216,6 +224,26 @@ mod tests {
             mgr.sessions.lock().unwrap().insert(id, s);
         }
         assert_eq!(mgr.list_sessions().len(), 3);
+    }
+
+    #[test]
+    fn get_fork_args_returns_fork_name_and_config() {
+        let mgr = SessionManager::new();
+        let mut s = Session::new("my-feature", AgentType::ClaudeCode);
+        s.worktree_path = Some("/repo/worktree".to_string());
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        let args = mgr.get_fork_args(&id).unwrap();
+        assert_eq!(args.0, "my-feature-fork");
+        assert_eq!(args.1, AgentType::ClaudeCode);
+        assert_eq!(args.2, Some("/repo/worktree".to_string()));
+    }
+
+    #[test]
+    fn get_fork_args_returns_none_for_missing_session() {
+        let mgr = SessionManager::new();
+        assert!(mgr.get_fork_args("nonexistent").is_none());
     }
 
     #[test]

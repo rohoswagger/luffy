@@ -13,7 +13,7 @@ import { QuickCommands } from "./components/QuickCommands";
 import { KeyboardHelp } from "./components/KeyboardHelp";
 import { TemplatesPanel } from "./components/TemplatesPanel";
 import { useSessionStore } from "./store/sessions";
-import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
+import { useTauriEvents, createSession, killSession, broadcastInput, forkSession } from "./hooks/useTauri";
 
 export default function App() {
   useTauriEvents();
@@ -43,6 +43,15 @@ export default function App() {
       setActiveSession(session.id);
     } catch (err) {
       console.error("Failed to create session:", err);
+    }
+  }, [setActiveSession]);
+
+  const handleFork = useCallback(async (id: string) => {
+    try {
+      const session = await forkSession(id);
+      setActiveSession(session.id);
+    } catch (err) {
+      console.error("Failed to fork session:", err);
     }
   }, [setActiveSession]);
 
@@ -115,6 +124,7 @@ export default function App() {
         onSelect={setActiveSession}
         onNewSession={() => setShowNewModal(true)}
         onKill={handleKill}
+        onFork={handleFork}
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>
