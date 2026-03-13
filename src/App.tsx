@@ -1,0 +1,128 @@
+import { useState, useEffect, useCallback } from "react";
+import { SessionSidebar } from "./components/SessionSidebar";
+import { TerminalPane } from "./components/TerminalPane";
+import { NewSessionModal } from "./components/NewSessionModal";
+import { useSessionStore } from "./store/sessions";
+import { useTauriEvents, createSession, killSession } from "./hooks/useTauri";
+
+export default function App() {
+  useTauriEvents();
+
+  const { sessions, activeSessionId, setActiveSession, removeSession } = useSessionStore();
+  const [showNewModal, setShowNewModal] = useState(false);
+
+  const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
+
+  // Auto-select first session
+  useEffect(() => {
+    if (!activeSessionId && sessions.length > 0) {
+      setActiveSession(sessions[0].id);
+    }
+  }, [sessions, activeSessionId, setActiveSession]);
+
+  const handleCreate = useCallback(async (args: { name: string; agent_type: string; working_dir: string | null }) => {
+    setShowNewModal(false);
+    try {
+      const session = await createSession(args);
+      setActiveSession(session.id);
+    } catch (err) {
+      console.error("Failed to create session:", err);
+    }
+  }, [setActiveSession]);
+
+  const handleKill = useCallback(async (id: string) => {
+    try {
+      await killSession(id);
+      removeSession(id);
+      if (id === activeSessionId) {
+        const remaining = sessions.filter((s) => s.id !== id);
+        setActiveSession(remaining.length > 0 ? remaining[0].id : null);
+      }
+    } catch (err) {
+      console.error("Failed to kill session:", err);
+    }
+  }, [sessions, activeSessionId, setActiveSession, removeSession]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+
+      if (meta && e.key === "n") { e.preventDefault(); setShowNewModal(true); return; }
+
+      if (meta && /^[1-9]$/.test(e.key)) {
+        e.preventDefault();
+        const s = sessions[parseInt(e.key, 10) - 1];
+        if (s) setActiveSession(s.id);
+        return;
+      }
+
+      if (meta && e.key === "[") {
+        e.preventDefault();
+        const idx = sessions.findIndex((s) => s.id === activeSessionId);
+        if (idx > 0) setActiveSession(sessions[idx - 1].id);
+        return;
+      }
+
+      if (meta && e.key === "]") {
+        e.preventDefault();
+        const idx = sessions.findIndex((s) => s.id === activeSessionId);
+        if (idx < sessions.length - 1) setActiveSession(sessions[idx + 1].id);
+        return;
+      }
+
+      if (meta && e.key === "w" && activeSessionId) {
+        e.preventDefault();
+        handleKill(activeSessionId);
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [sessions, activeSessionId, setActiveSession, handleKill]);
+
+  return (
+    <div style={{ display: "flex", height: "100vh", width: "100vw", overflow: "hidden" }}>
+      <SessionSidebar
+        sessions={sessions}
+        activeId={activeSessionId}
+        onSelect={setActiveSession}
+        onNewSession={() => setShowNewModal(true)}
+        onKill={handleKill}
+      />
+
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>
+        {activeSession && (
+          <div style={{
+            height: 36,
+            background: "var(--bg-secondary)",
+            borderBottom: "1px solid var(--border)",
+            display: "flex", alignItems: "center", padding: "0 16px", gap: 12,
+            fontSize: 12, color: "var(--text-secondary)",
+          }}>
+            <span style={{ color: "var(--text-primary)", fontWeight: 600 }}>{activeSession.name}</span>
+            {activeSession.branch && <span>⎇ {activeSession.branch}</span>}
+            {activeSession.worktree_path && <span>{activeSession.worktree_path}</span>}
+          </div>
+        )}
+
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          {sessions.map((s) => (
+            <TerminalPane
+              key={s.id}
+              sessionId={s.id}
+              tmuxSession={s.tmux_session}
+              active={s.id === activeSessionId}
+            />
+          ))}
+          {sessions.length === 0 && (
+            <TerminalPane sessionId={null} tmuxSession={null} active />
+          )}
+        </div>
+      </div>
+
+      <NewSessionModal open={showNewModal} onClose={() => setShowNewModal(false)} onCreate={handleCreate} />
+    </div>
+  );
+}
