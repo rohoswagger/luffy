@@ -31,13 +31,20 @@ A macOS desktop app for managing multiple tmux-based AI coding agent sessions in
 - **Session notes** — Attach a freeform note to any session (double-click to edit, persisted across restarts)
 - **Auto-respond patterns** — Configure patterns (e.g., `[y/n]` → `y`) that auto-reply when agents are WAITING — perfect for overnight runs
 - **Desktop notifications** — macOS notification when any agent needs your input
-- **Session persistence** — Restores existing `luffy-*` tmux sessions on app restart
+- **Session persistence** — Restores existing `luffy-*` tmux sessions on app restart, including original creation time for accurate duration display
+- **Stuck session detection** — Auto-interrupts THINKING sessions with no output change for 15 min (sends Ctrl+C) with desktop notification
+- **Session restart** — One-click restart for ERROR sessions with same config (↺ button)
+- **Batch-done notification** — Desktop notification when all active agents finish
+- **Clear done sessions** — One-click "× done" button removes all finished sessions from the sidebar
+- **Non-blocking export toast** — Session export shows inline toast notification instead of blocking alert
+- **Custom quick reply** — Type a custom response in the quick commands bar when a session is WAITING
+- **Live event log** — Event log panel auto-refreshes when session state changes
 
 ## Stack
 
 - **Frontend**: React 19 + TypeScript + Zustand + xterm.js v5
 - **Backend**: Tauri 2 + Rust + portable-pty
-- **Testing**: Vitest + @testing-library/react + cargo test (115 frontend + 87 Rust = 202 tests)
+- **Testing**: Vitest + @testing-library/react + cargo test (134 frontend + 99 Rust = 233 tests)
 - **Package manager**: bun
 
 ## Development
