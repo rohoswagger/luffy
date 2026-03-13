@@ -5,6 +5,17 @@ use std::collections::HashMap;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 
+/// Maximum events per session to prevent unbounded memory growth.
+const MAX_EVENTS: usize = 500;
+
+/// Trim events to MAX_EVENTS, keeping the most recent.
+fn cap_events(events: &mut Vec<SessionEvent>) {
+    if events.len() > MAX_EVENTS {
+        let drain_to = events.len() - MAX_EVENTS;
+        events.drain(..drain_to);
+    }
+}
+
 /// Config needed to restart a session (kill + recreate with same settings).
 pub struct RestartArgs {
     pub name: String,
@@ -148,6 +159,7 @@ impl SessionManager {
             if cost > s.total_cost_usd {
                 s.total_cost_usd = cost;
                 s.events.push(SessionEvent::cost_updated(cost));
+                cap_events(&mut s.events);
                 return s.cost_budget_usd > 0.0 && cost > s.cost_budget_usd;
             }
         }
@@ -162,6 +174,7 @@ impl SessionManager {
                 let from = s.status.to_string();
                 let to = status.to_string();
                 s.events.push(SessionEvent::status_changed(&from, &to));
+                cap_events(&mut s.events);
             }
             s.status = status;
             s.last_activity = chrono::Utc::now();
@@ -426,6 +439,9 @@ impl SessionManager {
             }
         }
 
+        // Cap events to prevent unbounded memory growth
+        cap_events(&mut s.events);
+
         let session_name = s.name.clone();
         Some(PtyChunkResult {
             status_changed,
@@ -459,7 +475,13 @@ pub fn extract_preview(raw: &str) -> String {
         .lines()
         .map(|l| l.trim())
         .rfind(|l| !l.is_empty())
-        .map(|l| if l.len() > 80 { &l[..80] } else { l })
+        .map(|l| {
+            if l.len() > 80 {
+                &l[..l.ceil_char_boundary(80)]
+            } else {
+                l
+            }
+        })
         .unwrap_or("")
         .to_string()
 }
@@ -752,6 +774,15 @@ mod tests {
     }
 
     #[test]
+    fn extract_preview_handles_multibyte_utf8_at_boundary() {
+        // Emoji (4 bytes each) near the 80-byte boundary must not panic
+        let line = "a".repeat(78) + "🎉🎊"; // 78 + 4 + 4 = 86 bytes
+        let preview = extract_preview(&line);
+        assert!(preview.len() <= 84); // may include the first emoji (82 bytes)
+        assert!(!preview.is_empty());
+    }
+
+    #[test]
     fn update_output_preview_stores_last_meaningful_line() {
         let mgr = SessionManager::new();
         let s = Session::new("my-session", AgentType::Generic);
@@ -850,5 +881,27 @@ mod tests {
     fn process_pty_chunk_returns_none_for_missing_session() {
         let mgr = SessionManager::new();
         assert!(mgr.process_pty_chunk("nope", "output", None).is_none());
+    }
+
+    #[test]
+    fn event_list_is_capped_at_max_events() {
+        let mgr = SessionManager::new();
+        let s = Session::new("chatty", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+
+        // Push more than MAX_EVENTS cost updates
+        for i in 0..(MAX_EVENTS + 100) {
+            mgr.update_cost(&id, i as f64);
+        }
+
+        let sessions = mgr.sessions.lock().unwrap();
+        let s = sessions.get(&id).unwrap();
+        assert!(
+            s.events.len() <= MAX_EVENTS,
+            "events should be capped at {}, got {}",
+            MAX_EVENTS,
+            s.events.len()
+        );
     }
 }

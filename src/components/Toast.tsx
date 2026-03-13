@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 
 interface ToastProps {
   message: string;
@@ -12,10 +12,13 @@ export const Toast = React.memo(function Toast({
   onDismiss,
   durationMs = 3000,
 }: ToastProps) {
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
   useEffect(() => {
-    const t = setTimeout(onDismiss, durationMs);
+    const t = setTimeout(() => onDismissRef.current(), durationMs);
     return () => clearTimeout(t);
-  }, [onDismiss, durationMs]);
+  }, [durationMs]);
 
   return (
     <div
