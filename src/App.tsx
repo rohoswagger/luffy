@@ -9,6 +9,7 @@ import { NewSessionModal } from "./components/NewSessionModal";
 import { CommandPalette } from "./components/CommandPalette";
 import { SearchPanel } from "./components/SearchPanel";
 import { EventLog } from "./components/EventLog";
+import { QuickCommands } from "./components/QuickCommands";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
@@ -173,6 +174,17 @@ export default function App() {
             </div>
           )}
         </div>
+
+        {/* Quick commands — shown when active session is WAITING */}
+        {activeSession?.status === "WAITING" && (
+          <QuickCommands
+            onSend={(cmd) => {
+              import("@tauri-apps/api/core").then(({ invoke }) => {
+                invoke("send_input", { sessionId: activeSession.id, input: cmd }).catch(console.error);
+              });
+            }}
+          />
+        )}
 
         {/* Broadcast bar — only when multiple sessions exist */}
         {sessions.length > 1 && (
