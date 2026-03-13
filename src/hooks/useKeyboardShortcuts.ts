@@ -18,6 +18,7 @@ export interface KeyboardShortcutOptions {
   onSelectSession: (id: string) => void;
   onKill: (id: string) => void;
   onMarkDone: (id: string) => void;
+  onExport: (id: string) => void;
   onSetLayout: (layout: Layout) => void;
   onEscape: () => void;
 }
@@ -136,6 +137,12 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
       if (meta && key === "d" && opts.activeSessionId) {
         e.preventDefault();
         opts.onMarkDone(opts.activeSessionId);
+        return;
+      }
+
+      if (meta && key === "e" && opts.activeSessionId) {
+        e.preventDefault();
+        opts.onExport(opts.activeSessionId);
         return;
       }
     };

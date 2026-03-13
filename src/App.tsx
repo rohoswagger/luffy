@@ -185,6 +185,21 @@ export default function App() {
     }
   }, []);
 
+  const handleExport = useCallback(
+    async (id: string) => {
+      try {
+        const path = await invoke<string>("export_session_output", {
+          sessionId: id,
+        });
+        setToast(`Exported to ${path}`);
+      } catch (err) {
+        console.error("Failed to export:", err);
+        setToast("Export failed");
+      }
+    },
+    [setToast],
+  );
+
   const handleRestart = useCallback(
     async (id: string) => {
       try {
@@ -235,6 +250,7 @@ export default function App() {
     onSelectSession: setActiveSession,
     onKill: handleKill,
     onMarkDone: handleMarkDone,
+    onExport: handleExport,
     onSetLayout: setLayout,
     onEscape: () => {
       setShowNewModal(false);

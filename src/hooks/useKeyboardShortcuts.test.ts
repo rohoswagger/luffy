@@ -54,6 +54,7 @@ describe("useKeyboardShortcuts", () => {
     onSelectSession: vi.fn(),
     onKill: vi.fn(),
     onMarkDone: vi.fn(),
+    onExport: vi.fn(),
     onSetLayout: vi.fn(),
     onEscape: vi.fn(),
   });
@@ -116,6 +117,14 @@ describe("useKeyboardShortcuts", () => {
     renderHook(() => useKeyboardShortcuts(opts));
     fireKey("d", { metaKey: true });
     expect(opts.onMarkDone).not.toHaveBeenCalled();
+  });
+
+  it("Cmd+E calls onExport with activeSessionId", () => {
+    const opts = defaults();
+    opts.activeSessionId = "s1";
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey("e", { metaKey: true });
+    expect(opts.onExport).toHaveBeenCalledWith("s1");
   });
 
   it("Cmd+W does nothing when no active session", () => {
