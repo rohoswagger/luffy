@@ -37,7 +37,7 @@ A macOS desktop app for managing multiple tmux-based AI coding agent sessions in
 
 - **Frontend**: React 19 + TypeScript + Zustand + xterm.js v5
 - **Backend**: Tauri 2 + Rust + portable-pty
-- **Testing**: Vitest + @testing-library/react + cargo test (109 frontend + 86 Rust = 195 tests)
+- **Testing**: Vitest + @testing-library/react + cargo test (115 frontend + 87 Rust = 202 tests)
 - **Package manager**: bun
 
 ## Development

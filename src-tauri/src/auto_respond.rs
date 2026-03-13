@@ -87,7 +87,9 @@ fn default_patterns() -> Vec<AutoResponse> {
     vec![
         AutoResponse { id: "default-yn".to_string(), pattern: "[y/n]".to_string(), response: "y".to_string(), enabled: false },
         AutoResponse { id: "default-yn2".to_string(), pattern: "(y/n)".to_string(), response: "y".to_string(), enabled: false },
+        AutoResponse { id: "default-yn3".to_string(), pattern: "(Y/n)".to_string(), response: "y".to_string(), enabled: false },
         AutoResponse { id: "default-enter".to_string(), pattern: "press enter to continue".to_string(), response: "".to_string(), enabled: false },
+        AutoResponse { id: "default-do-you-want".to_string(), pattern: "do you want to".to_string(), response: "y".to_string(), enabled: false },
     ]
 }
 

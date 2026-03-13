@@ -21,11 +21,17 @@ pub fn detect_status(recent_output: &str) -> Option<AgentStatus> {
 
 fn is_thinking(output: &str) -> bool {
     let patterns = [
+        // Braille spinner characters
         "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏",
+        // Generic thinking words
         "Thinking",
         "Working",
         "Analyzing",
         "Processing",
+        // Claude Code specific: ✻ prefix on thinking lines
+        "✻ ",
+        // Aider specific
+        "Sending...",
     ];
     patterns.iter().any(|p| output.contains(p))
 }
