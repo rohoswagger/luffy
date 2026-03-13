@@ -14,6 +14,7 @@ export interface SessionData {
   cost_budget_usd: number;
   note: string | null;
   last_output_preview: string;
+  startup_command: string | null;
 }
 
 interface SessionStore {

@@ -20,6 +20,7 @@ const mockSession = {
   cost_budget_usd: 0,
   note: null,
   last_output_preview: "",
+  startup_command: null,
 };
 
 describe("session store", () => {

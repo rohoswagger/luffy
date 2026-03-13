@@ -71,6 +71,15 @@ export default function App() {
     }
   }, []);
 
+  const handleRestart = useCallback(async (id: string) => {
+    try {
+      const session = await invoke<{ id: string }>("restart_session", { sessionId: id });
+      setActiveSession(session.id);
+    } catch (err) {
+      console.error("Failed to restart session:", err);
+    }
+  }, [setActiveSession]);
+
   const handleKill = useCallback(async (id: string) => {
     try {
       await killSession(id);
@@ -150,6 +159,7 @@ export default function App() {
         onKill={handleKill}
         onFork={handleFork}
         onMarkDone={handleMarkDone}
+        onRestart={handleRestart}
       />
 
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "var(--bg-primary)" }}>

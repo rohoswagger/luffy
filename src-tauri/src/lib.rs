@@ -220,6 +220,7 @@ pub fn run() {
             commands::rename_session,
             commands::set_session_note,
             commands::mark_session_done,
+            commands::restart_session,
             commands::list_auto_responses,
             commands::add_auto_response,
             commands::delete_auto_response,

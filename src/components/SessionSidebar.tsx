@@ -13,6 +13,7 @@ interface Props {
   onKill: (id: string) => void;
   onFork?: (id: string) => void;
   onMarkDone?: (id: string) => void;
+  onRestart?: (id: string) => void;
 }
 
 const AGENT_ICONS: Record<string, string> = {
@@ -21,7 +22,7 @@ const AGENT_ICONS: Record<string, string> = {
   "generic": "▸",
 };
 
-export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork, onMarkDone }: Props) {
+export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onKill, onFork, onMarkDone, onRestart }: Props) {
   const [now, setNow] = useState(new Date());
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -171,6 +172,15 @@ export function SessionSidebar({ sessions, activeId, onSelect, onNewSession, onK
                   style={{ background: "none", border: "none", color: "var(--text-secondary)", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
                 >
                   ✓
+                </button>
+              )}
+              {onRestart && session.status === "ERROR" && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onRestart(session.id); }}
+                  title="Restart session"
+                  style={{ background: "none", border: "none", color: "#fbbf24", cursor: "pointer", fontSize: 12, padding: "0 2px" }}
+                >
+                  ↺
                 </button>
               )}
               {onFork && (

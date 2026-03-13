@@ -53,6 +53,8 @@ pub struct Session {
     pub note: Option<String>,
     pub last_output_preview: String,
     pub events: Vec<SessionEvent>,
+    #[serde(default)]
+    pub startup_command: Option<String>,
 }
 
 impl Session {
@@ -74,6 +76,7 @@ impl Session {
             note: None,
             last_output_preview: String::new(),
             events: vec![SessionEvent::created()],
+            startup_command: None,
         }
     }
 }

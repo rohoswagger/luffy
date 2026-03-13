@@ -5,7 +5,7 @@ import type { SessionData } from "../store/sessions";
 const makeSession = (id: string, status: SessionData["status"]): SessionData => ({
   id, name: id, tmux_session: "", status, agent_type: "generic",
   worktree_path: null, branch: null, created_at: "", last_activity: "",
-  total_cost_usd: 0, cost_budget_usd: 0, note: null, last_output_preview: "",
+  total_cost_usd: 0, cost_budget_usd: 0, note: null, last_output_preview: "", startup_command: null,
 });
 
 describe("isSessionStuck", () => {

@@ -31,6 +31,7 @@ pub struct SessionDto {
     pub cost_budget_usd: f64,
     pub note: Option<String>,
     pub last_output_preview: String,
+    pub startup_command: Option<String>,
 }
 
 impl From<Session> for SessionDto {
@@ -53,6 +54,7 @@ impl From<Session> for SessionDto {
             cost_budget_usd: s.cost_budget_usd,
             note: s.note,
             last_output_preview: s.last_output_preview,
+            startup_command: s.startup_command,
         }
     }
 }
@@ -137,6 +139,16 @@ pub async fn create_session(
             .session_mgr
             .set_cost_budget(&session.id, args.cost_budget_usd);
         session.cost_budget_usd = args.cost_budget_usd;
+    }
+
+    // Persist startup command so forks and restarts can replay it.
+    if let Some(ref cmd) = args.startup_command {
+        if !cmd.is_empty() {
+            state
+                .session_mgr
+                .set_startup_command(&session.id, Some(cmd.clone()));
+            session.startup_command = Some(cmd.clone());
+        }
     }
 
     let session_id = session.id.clone();
@@ -459,6 +471,75 @@ pub async fn mark_session_done(
         .collect();
     let _ = app.emit("sessions-updated", sessions);
     Ok(())
+}
+
+/// Restart a session: kill it and create a new one with the same config.
+/// Returns the new SessionDto. Useful when a session crashes (ERROR status).
+#[tauri::command]
+pub async fn restart_session(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    session_id: String,
+) -> Result<SessionDto, String> {
+    let (name, agent_type, working_dir, startup_command, cost_budget) = state
+        .session_mgr
+        .get_restart_args(&session_id)
+        .ok_or_else(|| "Session not found".to_string())?;
+
+    // Kill the old session (ignore error if already dead)
+    state.pty_mgr.detach(&session_id);
+    let _ = state.session_mgr.kill_session(&session_id);
+
+    // Create a new session with the same config
+    let mut session = state
+        .session_mgr
+        .create_session(&name, agent_type, working_dir.as_deref())
+        .map_err(|e| e.to_string())?;
+
+    if cost_budget > 0.0 {
+        state.session_mgr.set_cost_budget(&session.id, cost_budget);
+        session.cost_budget_usd = cost_budget;
+    }
+
+    if let Some(ref cmd) = startup_command {
+        if !cmd.is_empty() {
+            state
+                .session_mgr
+                .set_startup_command(&session.id, Some(cmd.clone()));
+            session.startup_command = Some(cmd.clone());
+        }
+    }
+
+    let session_id_new = session.id.clone();
+    let tmux_name = session.tmux_session.clone();
+    let dto = SessionDto::from(session);
+
+    attach_pty(
+        &state.pty_mgr,
+        state.session_mgr.clone(),
+        app.clone(),
+        session_id_new.clone(),
+        &tmux_name,
+    )?;
+
+    if let Some(ref cmd) = startup_command {
+        if !cmd.is_empty() {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+            let _ = state
+                .pty_mgr
+                .write_input(&session_id_new, &format!("{}\n", cmd));
+        }
+    }
+
+    let sessions: Vec<SessionDto> = state
+        .session_mgr
+        .list_sessions()
+        .into_iter()
+        .map(SessionDto::from)
+        .collect();
+    let _ = app.emit("sessions-updated", sessions);
+
+    Ok(dto)
 }
 
 /// Resize a session's PTY to match the frontend terminal dimensions.

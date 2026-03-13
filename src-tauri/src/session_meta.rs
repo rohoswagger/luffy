@@ -14,6 +14,8 @@ pub struct SessionMeta {
     pub note: Option<String>,
     #[serde(default)]
     pub cost_budget_usd: f64,
+    #[serde(default)]
+    pub startup_command: Option<String>,
 }
 
 fn meta_path() -> PathBuf {
@@ -76,6 +78,7 @@ mod tests {
                 working_dir: Some("/repo".to_string()),
                 note: None,
                 cost_budget_usd: 0.0,
+                startup_command: None,
             }];
             save_meta(&meta).unwrap();
             let loaded = load_meta();
@@ -96,6 +99,7 @@ mod tests {
                 working_dir: None,
                 note: None,
                 cost_budget_usd: 0.0,
+                startup_command: None,
             }];
             save_meta(&m1).unwrap();
             let m2 = vec![
@@ -106,6 +110,7 @@ mod tests {
                     working_dir: None,
                     note: None,
                     cost_budget_usd: 0.0,
+                    startup_command: None,
                 },
                 SessionMeta {
                     tmux_session: "t2".into(),
@@ -114,6 +119,7 @@ mod tests {
                     working_dir: None,
                     note: None,
                     cost_budget_usd: 0.0,
+                    startup_command: None,
                 },
             ];
             save_meta(&m2).unwrap();

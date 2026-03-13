@@ -73,6 +73,7 @@ impl SessionManager {
                 working_dir: s.worktree_path.clone(),
                 note: s.note.clone(),
                 cost_budget_usd: s.cost_budget_usd,
+                startup_command: s.startup_command.clone(),
             })
             .collect();
         let _ = crate::session_meta::save_meta(&sessions);
@@ -202,6 +203,7 @@ impl SessionManager {
                 let working_dir = meta.and_then(|m| m.working_dir.clone());
                 let note = meta.and_then(|m| m.note.clone());
                 let cost_budget_usd = meta.map(|m| m.cost_budget_usd).unwrap_or(0.0);
+                let startup_command = meta.and_then(|m| m.startup_command.clone());
                 let (branch, worktree) = working_dir
                     .as_deref()
                     .map(crate::git::detect_git_info)
@@ -222,6 +224,7 @@ impl SessionManager {
                     note,
                     last_output_preview: String::new(),
                     events: vec![SessionEvent::created()],
+                    startup_command,
                 };
                 sessions.insert(session.id.clone(), session.clone());
                 restored.push(session);
@@ -286,6 +289,31 @@ impl SessionManager {
             .filter(|s| s.last_activity < cutoff)
             .map(|s| s.id.clone())
             .collect()
+    }
+
+    /// Store the startup command for a session (called after creation).
+    pub fn set_startup_command(&self, session_id: &str, cmd: Option<String>) {
+        let mut sessions = self.sessions.lock().unwrap();
+        if let Some(s) = sessions.get_mut(session_id) {
+            s.startup_command = cmd;
+        }
+    }
+
+    /// Return all config needed to restart a session (kill + recreate).
+    /// Returns (name, agent_type, working_dir, startup_command, cost_budget_usd).
+    pub fn get_restart_args(
+        &self,
+        session_id: &str,
+    ) -> Option<(String, AgentType, Option<String>, Option<String>, f64)> {
+        self.sessions.lock().unwrap().get(session_id).map(|s| {
+            (
+                s.name.clone(),
+                s.agent_type.clone(),
+                s.worktree_path.clone(),
+                s.startup_command.clone(),
+                s.cost_budget_usd,
+            )
+        })
     }
 
     /// Return (name, agent_type, working_dir) for forking a session.

@@ -6,8 +6,8 @@ import type { SessionData } from "../store/sessions";
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
 
 const mockSessions: SessionData[] = [
-  { id: "1", name: "feature-auth", tmux_session: "luffy-abc", status: "THINKING", agent_type: "claude-code", worktree_path: "/repo", branch: "feat/auth", created_at: "", last_activity: "", total_cost_usd: 0.123, cost_budget_usd: 0, note: null, last_output_preview: "" },
-  { id: "2", name: "fix-bug-42", tmux_session: "luffy-def", status: "WAITING", agent_type: "aider", worktree_path: null, branch: "fix/bug-42", created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0, note: "fixing the login regression", last_output_preview: "Running tests..." },
+  { id: "1", name: "feature-auth", tmux_session: "luffy-abc", status: "THINKING", agent_type: "claude-code", worktree_path: "/repo", branch: "feat/auth", created_at: "", last_activity: "", total_cost_usd: 0.123, cost_budget_usd: 0, note: null, last_output_preview: "",  startup_command: null },
+  { id: "2", name: "fix-bug-42", tmux_session: "luffy-def", status: "WAITING", agent_type: "aider", worktree_path: null, branch: "fix/bug-42", created_at: "", last_activity: "", total_cost_usd: 0, cost_budget_usd: 0, note: "fixing the login regression", last_output_preview: "Running tests...", startup_command: "aider" },
 ];
 
 describe("SessionSidebar", () => {
@@ -145,5 +145,25 @@ describe("SessionSidebar", () => {
     const sessions = [{ ...mockSessions[0], total_cost_usd: 2.5, cost_budget_usd: 5.0 }];
     render(<SessionSidebar sessions={sessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} />);
     expect(screen.getByText(/\$2\.50\/\$5\.00/)).toBeInTheDocument();
+  });
+
+  it("shows ↺ restart button for ERROR sessions", () => {
+    const errorSessions = [{ ...mockSessions[0], status: "ERROR" as const }];
+    const onRestart = vi.fn();
+    render(<SessionSidebar sessions={errorSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onRestart={onRestart} />);
+    expect(screen.getByTitle("Restart session")).toBeInTheDocument();
+  });
+
+  it("calls onRestart when ↺ button clicked", () => {
+    const errorSessions = [{ ...mockSessions[0], status: "ERROR" as const }];
+    const onRestart = vi.fn();
+    render(<SessionSidebar sessions={errorSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onRestart={onRestart} />);
+    fireEvent.click(screen.getByTitle("Restart session"));
+    expect(onRestart).toHaveBeenCalledWith("1");
+  });
+
+  it("does not show ↺ restart button for non-ERROR sessions", () => {
+    render(<SessionSidebar sessions={mockSessions} activeId={null} onSelect={vi.fn()} onNewSession={vi.fn()} onKill={vi.fn()} onRestart={vi.fn()} />);
+    expect(screen.queryByTitle("Restart session")).toBeNull();
   });
 });
