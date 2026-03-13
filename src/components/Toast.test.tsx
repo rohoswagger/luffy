@@ -40,4 +40,11 @@ describe("Toast", () => {
     expect(onDismiss).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
+
+  it("has role=alert and aria-live=polite for accessibility", () => {
+    render(<Toast message="test a11y" onDismiss={vi.fn()} />);
+    const el = screen.getByRole("alert");
+    expect(el).toHaveAttribute("aria-live", "polite");
+    expect(el).toHaveTextContent("test a11y");
+  });
 });

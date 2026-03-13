@@ -18,7 +18,13 @@ export const Toast = React.memo(function Toast({
   }, [onDismiss, durationMs]);
 
   return (
-    <div className="toast" onClick={onDismiss} title="Click to dismiss">
+    <div
+      className="toast"
+      role="alert"
+      aria-live="polite"
+      onClick={onDismiss}
+      title="Click to dismiss"
+    >
       {message}
     </div>
   );

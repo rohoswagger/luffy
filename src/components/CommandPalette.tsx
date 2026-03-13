@@ -212,30 +212,34 @@ export function CommandPalette({ open, sessions, onSelect, onClose }: Props) {
             color: "var(--text-secondary)",
           }}
         >
-          <span>
-            <kbd
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: 2,
-                padding: "1px 4px",
-              }}
-            >
-              ↵
-            </kbd>{" "}
-            open
-          </span>
-          <span>
-            <kbd
-              style={{
-                border: "1px solid var(--border)",
-                borderRadius: 2,
-                padding: "1px 4px",
-              }}
-            >
-              ↑↓
-            </kbd>{" "}
-            navigate
-          </span>
+          {filtered.length > 0 && (
+            <>
+              <span>
+                <kbd
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 2,
+                    padding: "1px 4px",
+                  }}
+                >
+                  ↵
+                </kbd>{" "}
+                open
+              </span>
+              <span>
+                <kbd
+                  style={{
+                    border: "1px solid var(--border)",
+                    borderRadius: 2,
+                    padding: "1px 4px",
+                  }}
+                >
+                  ↑↓
+                </kbd>{" "}
+                navigate
+              </span>
+            </>
+          )}
           <span>
             <kbd
               style={{

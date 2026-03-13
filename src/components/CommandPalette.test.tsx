@@ -204,4 +204,40 @@ describe("CommandPalette", () => {
     // Wraps to index 2 (IDLE session, id "3")
     expect(onSelect).toHaveBeenCalledWith("3");
   });
+
+  it("shows empty message and hides navigate hint when no results", () => {
+    render(
+      <CommandPalette
+        open
+        sessions={sessions}
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/search sessions/i), {
+      target: { value: "zzz-no-match" },
+    });
+    expect(screen.getByText(/no sessions match/i)).toBeInTheDocument();
+    expect(screen.queryByText("navigate")).toBeNull();
+    expect(screen.queryByText("open")).toBeNull();
+  });
+
+  it("Enter does nothing when no results match", () => {
+    const onSelect = vi.fn();
+    render(
+      <CommandPalette
+        open
+        sessions={sessions}
+        onSelect={onSelect}
+        onClose={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/search sessions/i), {
+      target: { value: "zzz-no-match" },
+    });
+    fireEvent.keyDown(screen.getByPlaceholderText(/search sessions/i), {
+      key: "Enter",
+    });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
 });
