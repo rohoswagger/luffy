@@ -93,4 +93,5 @@
 | Cmd+1–9         | Switch to session by index                  |
 | Cmd+[ / Cmd+]   | Previous / next session                     |
 | Cmd+W           | Kill active session                         |
+| Cmd+D           | Mark active session as done                 |
 | Cmd+Shift+1/2/4 | Switch layout 1up/2up/4up                   |

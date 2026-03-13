@@ -17,6 +17,7 @@ export interface KeyboardShortcutOptions {
   onJumpNextWaiting: () => void;
   onSelectSession: (id: string) => void;
   onKill: (id: string) => void;
+  onMarkDone: (id: string) => void;
   onSetLayout: (layout: Layout) => void;
   onEscape: () => void;
 }
@@ -129,6 +130,12 @@ export function useKeyboardShortcuts(opts: KeyboardShortcutOptions) {
       if (meta && key === "w" && opts.activeSessionId) {
         e.preventDefault();
         opts.onKill(opts.activeSessionId);
+        return;
+      }
+
+      if (meta && key === "d" && opts.activeSessionId) {
+        e.preventDefault();
+        opts.onMarkDone(opts.activeSessionId);
         return;
       }
     };

@@ -82,6 +82,9 @@ export default function App() {
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
   const waitingCount = sessions.filter((s) => s.status === "WAITING").length;
+  const thinkingCount = sessions.filter((s) => s.status === "THINKING").length;
+  const errorCount = sessions.filter((s) => s.status === "ERROR").length;
+  const doneCount = sessions.filter((s) => s.status === "DONE").length;
 
   // Clock for status bar durations
   useEffect(() => {
@@ -231,6 +234,7 @@ export default function App() {
     },
     onSelectSession: setActiveSession,
     onKill: handleKill,
+    onMarkDone: handleMarkDone,
     onSetLayout: setLayout,
     onEscape: () => {
       setShowNewModal(false);
@@ -544,7 +548,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* Right side: aggregate info + sidebar toggle */}
+              {/* Right side: status summary + aggregate info + sidebar toggle */}
               <div
                 style={{
                   display: "flex",
@@ -553,31 +557,69 @@ export default function App() {
                   flexShrink: 0,
                 }}
               >
-                {waitingCount > 0 && (
-                  <button
-                    onClick={() => {
-                      const next = nextWaitingSessionId(
-                        sessions,
-                        activeSessionId,
-                      );
-                      if (next) setActiveSession(next);
-                    }}
-                    style={{
-                      padding: "1px 6px",
-                      border: "none",
-                      background: "var(--status-waiting)",
-                      borderRadius: "var(--r-sm)",
-                      color: "var(--color-paper)",
-                      fontSize: "var(--text-xs)",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      fontFamily: "var(--font-sans)",
-                    }}
-                    title="Jump to next waiting session (⌘⇧A)"
-                  >
-                    {waitingCount} waiting
-                  </button>
-                )}
+                {/* Compact status counts */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    fontSize: "var(--text-xs)",
+                    fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  {thinkingCount > 0 && (
+                    <span
+                      style={{ color: "var(--status-thinking)" }}
+                      title={`${thinkingCount} session${thinkingCount > 1 ? "s" : ""} thinking`}
+                    >
+                      {thinkingCount}⟳
+                    </span>
+                  )}
+                  {waitingCount > 0 && (
+                    <button
+                      onClick={() => {
+                        const next = nextWaitingSessionId(
+                          sessions,
+                          activeSessionId,
+                        );
+                        if (next) setActiveSession(next);
+                      }}
+                      style={{
+                        padding: "1px 6px",
+                        border: "none",
+                        background: "var(--status-waiting)",
+                        borderRadius: "var(--r-sm)",
+                        color: "var(--color-paper)",
+                        fontSize: "var(--text-xs)",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        fontFamily: "var(--font-sans)",
+                      }}
+                      title={`${waitingCount} waiting — jump to next (⌘⇧A)`}
+                    >
+                      {waitingCount}⏎
+                    </button>
+                  )}
+                  {errorCount > 0 && (
+                    <span
+                      style={{
+                        color: "var(--status-error)",
+                        fontWeight: 700,
+                      }}
+                      title={`${errorCount} session${errorCount > 1 ? "s" : ""} with errors`}
+                    >
+                      {errorCount}✕
+                    </span>
+                  )}
+                  {doneCount > 0 && (
+                    <span
+                      style={{ color: "var(--status-done)" }}
+                      title={`${doneCount} session${doneCount > 1 ? "s" : ""} done`}
+                    >
+                      {doneCount}✓
+                    </span>
+                  )}
+                </div>
                 {totalCost > 0 && (
                   <span style={{ color: "var(--status-done)" }}>
                     ${totalCost.toFixed(2)}

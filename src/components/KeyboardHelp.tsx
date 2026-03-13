@@ -12,6 +12,7 @@ const SHORTCUTS = [
       { keys: "Cmd+N", desc: "New session (instant)" },
       { keys: "Cmd+Shift+N", desc: "New session (advanced options)" },
       { keys: "Cmd+W", desc: "Kill active session" },
+      { keys: "Cmd+D", desc: "Mark active session as done" },
       { keys: "Cmd+1–9", desc: "Switch to session by index" },
       { keys: "Cmd+[ / ]", desc: "Cycle sessions" },
     ],

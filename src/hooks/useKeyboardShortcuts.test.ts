@@ -53,6 +53,7 @@ describe("useKeyboardShortcuts", () => {
     onJumpNextWaiting: vi.fn(),
     onSelectSession: vi.fn(),
     onKill: vi.fn(),
+    onMarkDone: vi.fn(),
     onSetLayout: vi.fn(),
     onEscape: vi.fn(),
   });
@@ -99,6 +100,22 @@ describe("useKeyboardShortcuts", () => {
     renderHook(() => useKeyboardShortcuts(opts));
     fireKey("w", { metaKey: true });
     expect(opts.onKill).toHaveBeenCalledWith("s2");
+  });
+
+  it("Cmd+D calls onMarkDone with activeSessionId", () => {
+    const opts = defaults();
+    opts.activeSessionId = "s2";
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey("d", { metaKey: true });
+    expect(opts.onMarkDone).toHaveBeenCalledWith("s2");
+  });
+
+  it("Cmd+D does nothing when no active session", () => {
+    const opts = defaults();
+    opts.activeSessionId = null;
+    renderHook(() => useKeyboardShortcuts(opts));
+    fireKey("d", { metaKey: true });
+    expect(opts.onMarkDone).not.toHaveBeenCalled();
   });
 
   it("Cmd+W does nothing when no active session", () => {

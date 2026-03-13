@@ -170,12 +170,12 @@ h3,
 .btn-primary {
   background: var(--color-momo);
   border-color: var(--color-momo);
-  color: #fff;
+  color: var(--color-paper);
   font-weight: 500;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #c0748a;
-  border-color: #c0748a;
+  background: color-mix(in srgb, var(--color-momo), black 12%);
+  border-color: color-mix(in srgb, var(--color-momo), black 12%);
 }
 
 /* Ghost — hairline border */
