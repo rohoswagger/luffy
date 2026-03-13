@@ -155,6 +155,28 @@ impl SessionManager {
 
         Ok(restored)
     }
+
+    /// Check all active sessions against the provided alive check function.
+    /// Sessions that are THINKING/WAITING/IDLE and not alive get marked ERROR.
+    /// Returns the IDs of sessions that were marked as dead.
+    pub fn mark_dead_sessions(&self, alive_check: &dyn Fn(&str) -> bool) -> Vec<String> {
+        let to_check: Vec<(String, String)> = {
+            let sessions = self.sessions.lock().unwrap();
+            sessions.values()
+                .filter(|s| matches!(s.status, AgentStatus::Thinking | AgentStatus::WaitingForInput | AgentStatus::Idle))
+                .map(|s| (s.id.clone(), s.tmux_session.clone()))
+                .collect()
+        };
+
+        let mut dead = vec![];
+        for (id, tmux_name) in to_check {
+            if !alive_check(&tmux_name) {
+                self.update_status(&id, AgentStatus::Error);
+                dead.push(id);
+            }
+        }
+        dead
+    }
 }
 
 #[cfg(test)]
@@ -194,5 +216,71 @@ mod tests {
             mgr.sessions.lock().unwrap().insert(id, s);
         }
         assert_eq!(mgr.list_sessions().len(), 3);
+    }
+
+    #[test]
+    fn mark_dead_sessions_all_alive_returns_empty() {
+        let mgr = SessionManager::new();
+        let s = Session::new("running", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+        mgr.update_status(&id, AgentStatus::Thinking);
+
+        let dead = mgr.mark_dead_sessions(&|_| true);
+        assert!(dead.is_empty());
+        assert_eq!(mgr.get_session(&id).unwrap().status, AgentStatus::Thinking);
+    }
+
+    #[test]
+    fn mark_dead_sessions_dead_session_gets_error_status() {
+        let mgr = SessionManager::new();
+        let s = Session::new("zombie", AgentType::Generic);
+        let id = s.id.clone();
+        mgr.sessions.lock().unwrap().insert(id.clone(), s);
+        mgr.update_status(&id, AgentStatus::Thinking);
+
+        let dead = mgr.mark_dead_sessions(&|_| false);
+        assert_eq!(dead, vec![id.clone()]);
+        assert_eq!(mgr.get_session(&id).unwrap().status, AgentStatus::Error);
+    }
+
+    #[test]
+    fn mark_dead_sessions_skips_terminal_states() {
+        let mgr = SessionManager::new();
+        let s1 = Session::new("done-session", AgentType::Generic);
+        let s2 = Session::new("error-session", AgentType::Generic);
+        let id1 = s1.id.clone();
+        let id2 = s2.id.clone();
+        mgr.sessions.lock().unwrap().insert(id1.clone(), s1);
+        mgr.sessions.lock().unwrap().insert(id2.clone(), s2);
+        mgr.update_status(&id1, AgentStatus::Done);
+        mgr.update_status(&id2, AgentStatus::Error);
+
+        // alive_check returns false for everything, but DONE/ERROR sessions should be skipped
+        let dead = mgr.mark_dead_sessions(&|_| false);
+        assert!(dead.is_empty());
+        assert_eq!(mgr.get_session(&id1).unwrap().status, AgentStatus::Done);
+        assert_eq!(mgr.get_session(&id2).unwrap().status, AgentStatus::Error);
+    }
+
+    #[test]
+    fn mark_dead_sessions_only_marks_dead_ones() {
+        let mgr = SessionManager::new();
+        let alive = Session::new("alive", AgentType::Generic);
+        let dead_s = Session::new("dead", AgentType::Generic);
+        let alive_id = alive.id.clone();
+        let dead_id = dead_s.id.clone();
+        let alive_tmux = alive.tmux_session.clone();
+
+        mgr.sessions.lock().unwrap().insert(alive_id.clone(), alive);
+        mgr.sessions.lock().unwrap().insert(dead_id.clone(), dead_s);
+        mgr.update_status(&alive_id, AgentStatus::WaitingForInput);
+        mgr.update_status(&dead_id, AgentStatus::WaitingForInput);
+
+        let dead = mgr.mark_dead_sessions(&|name| name == alive_tmux);
+        assert_eq!(dead.len(), 1);
+        assert_eq!(dead[0], dead_id);
+        assert_eq!(mgr.get_session(&alive_id).unwrap().status, AgentStatus::WaitingForInput);
+        assert_eq!(mgr.get_session(&dead_id).unwrap().status, AgentStatus::Error);
     }
 }

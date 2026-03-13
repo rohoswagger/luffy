@@ -38,13 +38,15 @@ fn is_waiting_for_input(output: &str) -> bool {
 }
 
 fn is_error(output: &str) -> bool {
-    let patterns = ["Error:", "error:", "ERROR", "failed:", "Failed:", "✗", "✖", "×"];
+    // Use specific multi-word patterns to avoid false positives on common single characters
+    let patterns = ["Error:", "error:", "ERROR:", "Failed:", "failed:", "FAILED:"];
     let recent = if output.len() > 500 { &output[output.len() - 500..] } else { output };
     patterns.iter().any(|p| recent.contains(p))
 }
 
 fn is_done(output: &str) -> bool {
-    let patterns = ["✓", "✔", "Done", "Completed", "Finished", "LGTM"];
+    // Match agent completion markers specifically (not just "Done" which appears in many contexts)
+    let patterns = ["✓ Done", "✔ Done", "Task complete", "All done", "Completed successfully", "LGTM"];
     let recent = if output.len() > 200 { &output[output.len() - 200..] } else { output };
     patterns.iter().any(|p| recent.contains(p))
 }
@@ -75,6 +77,20 @@ mod tests {
     fn detects_done() {
         let output = "All tests pass\n✓ Done";
         assert_eq!(detect_status(output), Some(AgentStatus::Done));
+    }
+
+    #[test]
+    fn done_does_not_false_positive_on_standalone_done() {
+        // lowercase "done" at end of sentence should NOT trigger done status
+        let output = "saved file content.done\nReady to continue";
+        assert_eq!(detect_status(output), None);
+    }
+
+    #[test]
+    fn error_does_not_false_positive_on_symbols() {
+        // ✗ alone should not trigger error status
+        let output = "checking ✗ some ui element";
+        assert_eq!(detect_status(output), None);
     }
 
     #[test]

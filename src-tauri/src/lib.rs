@@ -4,10 +4,12 @@ pub mod commands;
 pub mod pty_stream;
 pub mod git;
 pub mod templates;
+pub mod cost;
 
 use session::SessionManager;
 use pty_stream::PtyManager;
 use std::sync::Arc;
+use tauri::Manager;
 
 pub struct AppState {
     pub session_mgr: Arc<SessionManager>,
@@ -20,6 +22,26 @@ pub fn run() {
         .manage(AppState {
             session_mgr: Arc::new(SessionManager::new()),
             pty_mgr: Arc::new(PtyManager::new()),
+        })
+        .setup(|app| {
+            let app_handle = app.handle().clone();
+            let state = app.state::<AppState>();
+            let session_mgr = state.session_mgr.clone();
+
+            // Background health monitor: every 10s, check if tmux sessions are still alive.
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
+                    let dead = session_mgr.mark_dead_sessions(&session::is_tmux_session_alive);
+                    if !dead.is_empty() {
+                        let sessions: Vec<commands::SessionDto> = session_mgr.list_sessions()
+                            .into_iter().map(commands::SessionDto::from).collect();
+                        let _ = tauri::Emitter::emit(&app_handle, "sessions-updated", sessions);
+                    }
+                }
+            });
+
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::create_session,
@@ -47,4 +69,3 @@ mod tests {
         assert_eq!(1 + 1, 2);
     }
 }
-pub mod cost;
