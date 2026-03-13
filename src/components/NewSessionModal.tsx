@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 
 interface CreateArgs {
   name: string;
@@ -91,6 +92,17 @@ export function NewSessionModal({ open, onClose, onCreate }: Props) {
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
             <button type="button" onClick={onClose} style={{ ...inputStyle, width: "auto", cursor: "pointer" }}>
               Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const baseName = name.trim() || "session";
+                invoke("save_template", { name: baseName, agentType: agentType, workingDir: workingDir.trim() || null, count }).catch(console.error);
+              }}
+              style={{ ...inputStyle, width: "auto", cursor: "pointer" }}
+              title="Save this config as a reusable template"
+            >
+              Save template
             </button>
             <button type="submit" style={{ ...inputStyle, width: "auto", cursor: "pointer", background: "var(--accent-blue)", border: "none", color: "#000", fontWeight: 600 }}>
               Create

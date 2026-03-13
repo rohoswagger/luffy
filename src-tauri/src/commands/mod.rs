@@ -168,6 +168,29 @@ pub async fn restore_sessions(
     Ok(sessions.into_iter().map(SessionDto::from).collect())
 }
 
+// ---- Session Templates ----
+
+#[tauri::command]
+pub async fn list_templates() -> Result<Vec<crate::templates::SessionTemplate>, String> {
+    crate::templates::load_templates().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_template(
+    name: String,
+    agent_type: String,
+    working_dir: Option<String>,
+    count: u32,
+) -> Result<Vec<crate::templates::SessionTemplate>, String> {
+    let t = crate::templates::SessionTemplate::new(&name, &agent_type, working_dir, count);
+    crate::templates::add_template(t).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn delete_template(template_id: String) -> Result<Vec<crate::templates::SessionTemplate>, String> {
+    crate::templates::delete_template(&template_id).map_err(|e| e.to_string())
+}
+
 /// Export a session's output buffer to a log file in ~/Downloads (or ~).
 /// Returns the full path of the written file.
 #[tauri::command]

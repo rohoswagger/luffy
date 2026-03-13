@@ -11,6 +11,7 @@ import { SearchPanel } from "./components/SearchPanel";
 import { EventLog } from "./components/EventLog";
 import { QuickCommands } from "./components/QuickCommands";
 import { KeyboardHelp } from "./components/KeyboardHelp";
+import { TemplatesPanel } from "./components/TemplatesPanel";
 import { useSessionStore } from "./store/sessions";
 import { useTauriEvents, createSession, killSession, broadcastInput } from "./hooks/useTauri";
 
@@ -23,6 +24,7 @@ export default function App() {
   const [showSearch, setShowSearch] = useState(false);
   const [showEventLog, setShowEventLog] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [layout, setLayout] = useState<Layout>("1up");
 
   const activeSession = sessions.find((s) => s.id === activeSessionId) ?? null;
@@ -153,6 +155,13 @@ export default function App() {
               </button>
             )}
             <button
+              title="Session templates"
+              onClick={() => setShowTemplates(true)}
+              style={{ background: "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
+            >
+              ⬡ templates
+            </button>
+            <button
               title="Toggle event log (Cmd+L)"
               onClick={() => setShowEventLog((v) => !v)}
               style={{ background: showEventLog ? "var(--bg-tertiary)" : "none", border: "1px solid var(--border)", borderRadius: 4, color: "var(--text-secondary)", cursor: "pointer", padding: "2px 6px", fontSize: 11 }}
@@ -217,6 +226,18 @@ export default function App() {
 
       <NewSessionModal open={showNewModal} onClose={() => setShowNewModal(false)} onCreate={handleCreate} />
       <KeyboardHelp open={showHelp} onClose={() => setShowHelp(false)} />
+      <TemplatesPanel
+        open={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onLaunch={(t) => {
+          const base = t.name;
+          const dir = t.working_dir;
+          for (let i = 1; i <= t.count; i++) {
+            const name = t.count > 1 ? `${base}-${i}` : base;
+            handleCreate({ name, agent_type: t.agent_type, working_dir: dir });
+          }
+        }}
+      />
       <CommandPalette
         open={showPalette}
         sessions={sessions}

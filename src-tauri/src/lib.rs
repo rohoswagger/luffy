@@ -3,6 +3,7 @@ pub mod status;
 pub mod commands;
 pub mod pty_stream;
 pub mod git;
+pub mod templates;
 
 use session::SessionManager;
 use pty_stream::PtyManager;
@@ -31,6 +32,9 @@ pub fn run() {
             commands::resize_pty,
             commands::get_session_events,
             commands::export_session_output,
+            commands::list_templates,
+            commands::save_template,
+            commands::delete_template,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

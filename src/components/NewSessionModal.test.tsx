@@ -2,6 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { NewSessionModal } from "./NewSessionModal";
 
+vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue([]) }));
+
 describe("NewSessionModal", () => {
   it("renders the modal when open", () => {
     render(<NewSessionModal open onClose={vi.fn()} onCreate={vi.fn()} />);
